@@ -1,8 +1,11 @@
 
 import { configureStore } from "@reduxjs/toolkit";
+import battleLogReducer from "./battleLogSlice";
 
 export const store = configureStore({
-  reducer: {},
+  reducer: {
+    battleLog: battleLogReducer,
+  },
 });
 
 export type RootState = ReturnType<typeof store.getState>;

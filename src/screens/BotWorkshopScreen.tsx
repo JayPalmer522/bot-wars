@@ -12,6 +12,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { db } from "../db/db";
 import { seedDefaults } from "../db/seed";
+import { CHECK_BOT_TOTALS as calcBotTotals } from "../utils/Combat";
   
 export default function BotWorkshopScreen() {
   const navigate = useNavigate();
@@ -34,11 +35,24 @@ export default function BotWorkshopScreen() {
   const [ordersList, setOrdersList] = useState("Default Orders List 5");
   const [botImage, setBotImage] = useState("Default Bot Image Small");
 
-  // Sensor stats display
-  const [sensorSlots, setSensorSlots] = useState("1");
-  const [sensorWeight, setSensorWeight] = useState("10");
-  const [sensorGold, setSensorGold] = useState("50");
-  const [sensorPower, setSensorPower] = useState("10");
+  // Bot totals display
+  const [totalSlotsDisplay, setTotalSlotsDisplay] = useState("0/0");
+  const [totalSlotsColor, setTotalSlotsColor] = useState("black");
+  const [totalWeight, setTotalWeight] = useState("0");
+  const [totalGold, setTotalGold] = useState("0");
+  const [totalPower, setTotalPower] = useState("0");
+  const [totalMove, setTotalMove] = useState("0");
+
+  // Recalculate totals whenever any component selection changes
+  useEffect(() => {
+    const result = calcBotTotals(frame, engine, computer, armor, sensor, weaponMaster, weaponSecondary, weaponBomb);
+    setTotalSlotsDisplay(result.slotsDisplay);
+    setTotalSlotsColor(result.slotsColor);
+    setTotalWeight(result.totalWeight);
+    setTotalGold(result.totalGold);
+    setTotalPower(result.totalPower);
+    setTotalMove(result.move);
+  }, [frame, engine, computer, armor, sensor, weaponMaster, weaponSecondary, weaponBomb]);
 
   // Seed defaults if empty, then load bot name list
   useEffect(() => {
@@ -46,7 +60,6 @@ export default function BotWorkshopScreen() {
       await seedDefaults();
       const all = await db.bots.orderBy("name").toArray();
       setBotNames(all.map((b) => b.name));
-      updateSensorStats(sensor);
     }
     init();
   }, []);
@@ -60,7 +73,6 @@ export default function BotWorkshopScreen() {
     setComputer(bot.computer);
     setArmor(bot.armor);
     setSensor(bot.sensor);
-    updateSensorStats(bot.sensor);
     setWeaponMaster(bot.weaponMaster);
     setWeaponSecondary(bot.weaponSecondary);
     setWeaponBomb(bot.weaponBomb);
@@ -69,29 +81,6 @@ export default function BotWorkshopScreen() {
     if (tm) setTargetingMap(tm.name);
     const ol = await db.orderLists.get(bot.ordersListId);
     if (ol) setOrdersList(ol.name);
-  }
-
-  // Check Bot Totals function
-  function CHECK_BOT_TOTALS() {
-    // This function is called whenever any dropdown selection is made
-    // Update sensor stats
-    updateSensorStats(sensor);
-    console.log("CHECK_BOT_TOTALS called");
-  }
-
-  // Parse and update sensor stats
-  function updateSensorStats(sensorValue: string) {
-    // Extract values from sensor string
-    // Format: "Blind-Night = TS identifies Max 1 targets in 1 range, 10 PC, 1 slots, 10 weight, 50 cost."
-    const slotsMatch = sensorValue.match(/(\d+)\s+slots/i);
-    const weightMatch = sensorValue.match(/(\d+)\s+weight/i);
-    const costMatch = sensorValue.match(/(\d+)\s+cost/i);
-    const powerMatch = sensorValue.match(/(\d+)\s+PC/i);
-
-    if (slotsMatch) setSensorSlots(slotsMatch[1]);
-    if (weightMatch) setSensorWeight(weightMatch[1]);
-    if (costMatch) setSensorGold(costMatch[1]);
-    if (powerMatch) setSensorPower(powerMatch[1]);
   }
 
   // Placeholder validation routine
@@ -178,15 +167,7 @@ export default function BotWorkshopScreen() {
       </Typography>
       <Select
         value={value}
-        onChange={(e) => {
-          const newValue = e.target.value;
-          setValue(newValue);
-          // Special handling for sensor to update display stats
-          if (label === "Select Targeting Sensor:") {
-            updateSensorStats(newValue);
-          }
-          CHECK_BOT_TOTALS();
-        }}
+        onChange={(e) => setValue(e.target.value)}
         MenuProps={{
           PaperProps: {
             sx: {
@@ -411,11 +392,11 @@ export default function BotWorkshopScreen() {
               </Typography>
               <TextField
                 disabled
-                value={sensorSlots}
+                value={totalSlotsDisplay}
                 variant="outlined"
                 sx={{
                   width: "100%",
-                  bgcolor: "lightblue",
+                  bgcolor: totalSlotsColor === "red" ? "#ffcccc" : "lightblue",
                   "& .MuiOutlinedInput-root": {
                     height: "24px",
                   },
@@ -450,7 +431,7 @@ export default function BotWorkshopScreen() {
               </Typography>
               <TextField
                 disabled
-                value={sensorWeight}
+                value={totalWeight}
                 variant="outlined"
                 sx={{
                   width: "100%",
@@ -489,7 +470,7 @@ export default function BotWorkshopScreen() {
               </Typography>
               <TextField
                 disabled
-                value={sensorGold}
+                value={totalGold}
                 variant="outlined"
                 sx={{
                   width: "100%",
@@ -528,7 +509,7 @@ export default function BotWorkshopScreen() {
               </Typography>
               <TextField
                 disabled
-                value={sensorPower}
+                value={totalPower}
                 variant="outlined"
                 sx={{
                   width: "100%",
@@ -567,7 +548,7 @@ export default function BotWorkshopScreen() {
               </Typography>
               <TextField
                 disabled
-                value={sensorPower}
+                value={totalMove}
                 variant="outlined"
                 sx={{
                   width: "100%",

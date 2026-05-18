@@ -1,0 +1,8 @@
+Show what has changed (files in red)
+git status
+
+Show the differences in each changed file
+git diff
+
+Push your changes up to GitHub
+push "Describe these changes"

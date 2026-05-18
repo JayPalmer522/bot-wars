@@ -1,0 +1,43 @@
+
+
+
+Successfully creating Map of Starting Positons for all 40 Bots, with zeros in all empty spaces.
+
+Changed Function name from UPDATE_MAP_SQUARES to STARTING_MAP_SQUARES.
+
+******************************************************************
+This is calling the function Function UPDATE_MAP_SQUARESFunction from MAIN_COMBAT_LOOP.
+
+However, most of those functions were gutted. Turns out that the ALL_BOTS_IN_COMBAT_LIST is confusing everything because it was saved as objects, not strings. 
+
+Trying to fix this in next version. 
+
+
+******************************************************************
+This was created by taking the code from Dawes' flashdrive after I installed it in place of what was previously there. 
+I used it and it generated many errors. 
+I went back into AI (Copilot) and just told it to "Find and fix the errors". 
+The program started working again. 
+Immediately I copied the entire folder of bot-wars to this folder. 
+
+This program creates the "ALL_BOTS_IN_COMBAT_LIST" correctly. 
+
+It creates the "COMBAT_RECORD", but that hasn't been tested. 
+
+This does have the Code which I did not want added and can't seem to remove I have no idea what "battleState" is for:
+
+
+    const battleState = {
+      battleId: `battle_${Date.now()}`,
+      SHOW_COMBAT_RECORD,
+      COMBAT_RECORD,
+      army1: { ...army1, bots: bots1, aliveCount: bots1.length },
+      army2: { ...army2, bots: bots2, aliveCount: bots2.length },
+      ALL_BOTS_IN_COMBAT_LIST,
+      currentTurn: 0,
+      currentArmy: 1,
+      battleLog: [],
+      settings: settings,
+      isActive: true,
+
+It is 11:20 AM on May 14, 2026.
