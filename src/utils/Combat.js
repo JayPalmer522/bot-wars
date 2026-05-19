@@ -151,25 +151,81 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
   }));
 }
 
+
 /**
  * MAIN_COMBAT_LOOP
+ * 
+ * Begins the battle simulation loop. 
+ * MANUALLY CREATED BY JAY!
+ * 
+ * The MAIN_COMBAT_LOOP function takes in the ALL_BOTS_IN_COMBAT_LIST. 
  *
- * Begins the battle simulation loop.
- */
+ * The MAIN_COMBAT_LOOP function MUST TAKE IN COMBAT_RECORD, TOO! 
+ *
+ * Then it calls the function STARTING_MAP_SQUARES, passing to it the 
+ * ALL_BOTS_IN_COMBAT_LIST, and takes the return of GAME_MAP_BOTS, where all 
+ * 100 spaces (in order) are listed with a zero and and occupied starting locations have the ID number of the Bot starting there. This returns to the
+ * function MAIN_COMBAT_LOOP the onject GAME_MAP_BOTS.
+ *
+ * The MAIN_COMBAT_LOOP function takes GAME_MAP_BOTS and then it creates a
+ * duplicate of this called MASTER_ALL_BOTS_IN_COMBAT_LIST, which it scrolls
+ * through endlessly until the game is declared ended because of 
+ * either of 2 conditions: one team has no Bots left in the  
+ * ALL_BOTS_IN_COMBAT_LIST or more than 50 turns have passed with no Bot 
+ * sustaining damage. 
+ * 
+ * For each Bot still alive (not on the DEAD_BOTS_LIST) the function 
+ * MAIN_COMBAT_LOOP calls the function EXECUTE_BOT_ACTION, passing to it 
+ * the ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, and COMBAT_RECORD.
+ *
+ * In the end, the function BEGIN_COMBAT after the combat 
+ * is over, passing to it the COMBAT_RECORD. 
+*/ 
 export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
   console.log("MAIN_COMBAT_LOOP called");
-
-//  const startingMap = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
-
+////////  Run STARTING_MAP_SQUARES /////////////////
   const [GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+  console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS); //Working here.
+  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES); //Working here.
+  let TOO_MANY_TURNS = 0;
+  let BOT_IS_DESTROYED = ['41','42','43'];
+//  console.log(" BOT_IS_DESTROYED.includes(42);: " + BOT_IS_DESTROYED.includes("42"));
+//      console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
+// BOT_IS_DESTROYED.includes("42");
+//  while (TOO_MANY_TURNS <= 10){
+//	  TOO_MANY_TURNS++;
+console.log("...........TOO MANY TURNS...........");
+//console.log(" JAY: JAY: JAY: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
+//console.log(" JAY: JAY: JAY: " + ALL_BOTS_IN_COMBAT_LIST);
+	for (var j = 0; j < ALL_BOTS_IN_COMBAT_LIST.length; j++){
+//console.log(" !!!!!!!: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j]));
+console.log(" VVVVVVV: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].name) + "   " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].combatBotNumber) + "  ordersListId: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId));
+		
 
-  console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS);
 
-  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES);
+	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
+//  }//while TOO_MANY_TURNS <= 10.
 
-//  console.log("Starting map:" + startingMap);
-//  console.log("Starting map:", JSON.stringify(startingMap));
 
+//	  for (let CURRENT_BOT in JSON.stringify(ALL_BOTS_IN_COMBAT_LIST)){
+//			  TOO_MANY_TURNS++;
+//console.log(" CURRENT_BOT: " + JSON.stringify(CURRENT_BOT));
+//	  }//for CURRENT_BOT in ALL_BOTS_IN_COMBAT_LIST.
+
+//console.log(text);
+//		  if (BOT_IS_DESTROYED.includes(CURRENT_BOT_NUMBER) && TOO_MANY_TURNS <= 50){
+
+//window.alert(" CURRENT_BOT: " + CURRENT_BOT);
+//			Run function EXECUTE_ORDERS_LIST.
+//	 		Run function REMOVE_DESTROYED_BOTS.			  
+//		  }//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
+
+
+
+
+
+
+window.alert(".........END OF MAIN COMBAT LOOP.........");
 
   return { success: true };
 }
@@ -263,10 +319,10 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
 "Place Bot 17 facing West on ANI_MAP_SPACE 41.",
 */
 
-     window.alert("***STRING: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
+//     window.alert("***STRING: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
     console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
-	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
-    console.log("COMBAT_RECORD3: ", JSON.stringify(COMBAT_RECORD));
+//	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
+//    console.log("COMBAT_RECORD3: ", JSON.stringify(COMBAT_RECORD));
 	
     return [GAME_MAP_BOTS, GAME_MAP_SQUARES];
   } catch (error) {
@@ -276,10 +332,44 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
 }
 
 
-
 /**
  * EXECUTE_ORDERS_LIST
+ * 
+ * This function is called by the function MAIN_COMBAT_LOOP, which passes
+ * to it the objects CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS,
+ * and the COMBAT_RECORD.
+ * 
+ * The EXECUTE_ORDERS_LIST gets the ORDERS_LIST from the Orders List Database 
+ * for the CURRENT_BOT. Then it goes through each line of the ORDERS_LIST 
+ * and executes a function for each command, passing all the needed objects.
+ * 
+ * Calls CURRENT_ACTIVATE_SCANNER sends CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, and COMBAT_RECORD. Returns CURRENT_BULLET_TARGET1 and 
+ * CURRENT_BULLET_TARGET2.
+ *
+ * Calls CURRENT_MOVE_BOT1 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
+ * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
+ * 
+ * Calls CURRENT_MOVE_BOT2 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
+ * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
+ * 
+ * Calls CURRENT_MOVE_BOT3 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
+ * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
+ * 
+ * Calls CURRENT_MOVE_BOT4 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
+ * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
+ * 
+ * Calls CURRENT_MOVE_BOT5 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
+ * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
+ * 
+ * 
+ * 
+ * This function EXECUTE_ORDERS_LIST returns to the MAIN_COMBAT_LOOP, from 
+ * which it came, and passes the objects ALL_BOTS_IN_COMBAT_LIST, 
+ * GAME_MAP_BOTS, DEAD_BOTS_LIST, and the COMBAT_RECORD.
+ * 
+ * 
  */
+
 export async function EXECUTE_ORDERS_LIST(recordOrdersList, allBotsInCombatList) {
   console.log("EXECUTE_ORDERS_LIST called");
 
