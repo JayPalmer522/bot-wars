@@ -16,13 +16,45 @@ function extractComponentName(descriptionString) {
 
 /**
  * BEGIN_COMBAT
+ * 
+ * This function looks at the 2 armies named in the two textboxes on the
+ * COMBAT_SCREEN, and searches for those 2 armies in the database. Then it goes
+ * through each and gets the names of the Bots in the Army Database for 
+ * army1Id (name of first army) and army2Id (name of second army), and goes 
+ * to the Bots Database to get those Bots and add the data of each bot into an 
+ * objects bots1 and bots2.
  *
- * Sets up a new combat session with two armies and specified settings.
+ * After this is done, all needed data is gotten from the Army and Bots
+ * Databases. There is still a Components Database where date for specific 
+ * components, like weapon damage and scanner ranges, may be acquired. 
  *
- * @param {number} army1Id
- * @param {number} army2Id
- * @param {object} settings - { maxGold, maxWeight, maxPower, playerName, ... }
- * @returns {Promise<{success: boolean, battleId?: string, message?: string}>}
+ * The Combat settings (maxGold, maxWeight, maxPower, etc.) are used only to insure that these values are able to be listed on the RESULTS_SCREEN.
+ * 
+ * These objects (bots1 and bots2) are passed to the function 
+ * CREATE_ALL_BOTS_IN_COMBAT_LIST, which returns ALL_BOTS_IN_COMBAT_LIST.
+ * 
+ * The BEGIN_COMBAT function also creates the COMBAT_RECORD object. The  
+ * BEGIN_COMBAT logs the Settings Data (maxGold, etc.). All commands for the
+ * 3rd stage of the game (Animations) are logged to COMBAT_RECORD.
+ * 
+ * After this, the function BEGIN_COMBAT calls the function
+ * CREATE_ALL_BOTS_IN_COMBAT_LIST, which makes the main object for the game.
+ * 
+ * After this, the function BEGIN_COMBAT calls the function
+ * MAIN_COMBAT_LOOP, passing to it the ALL_BOTS_IN_COMBAT_LIST.
+ * 
+ * The function BEGIN_COMBAT MUST ALSO PASS THE VALUE OF COMBAT_RECORD to 
+ * the function MAIN_COMBAT_LOOP!!!!
+ *
+ * After the combat, the function MAIN_COMBAT_LOOP calls the logs the victory
+ * and ratings of the player(s) in the PROFILES database.
+ *
+ * After the combat, the function MAIN_COMBAT_LOOP calls the ANIMATION process
+ * and let's the player watch the game. 
+ *
+ * In the end, the function MAIN_COMBAT_LOOP calls the RESULTS_SCREEN after 
+ * the animation is complete.
+ * 
  */
 export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
   SHOW_COMBAT_RECORD = "TRUE";
@@ -79,6 +111,46 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
 }
 
 /**
+ * CREATE_ALL_BOTS_IN_COMBAT_LIST
+ *
+ * Merges both army bot lists into a single interleaved list in random order.
+ * Randomly decides which army goes first.
+ */
+export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
+  const firstArmy = Math.floor(Math.random() * 2) + 1;
+
+  const shuffle = (arr) => {
+    const a = [...arr];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  };
+
+  const shuffledArmy1 = shuffle(army1Bots);
+  const shuffledArmy2 = shuffle(army2Bots);
+
+  const allBots = [];
+  const maxLength = Math.max(shuffledArmy1.length, shuffledArmy2.length);
+
+  for (let i = 0; i < maxLength; i++) {
+    if (firstArmy === 1) {
+      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
+      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
+    } else {
+      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
+      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
+    }
+  }
+
+  return allBots.map((bot, index) => ({
+    ...bot,
+    combatBotNumber: bot.botNumber || index + 1,
+  }));
+}
+
+/**
  * MAIN_COMBAT_LOOP
  *
  * Begins the battle simulation loop.
@@ -86,18 +158,32 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
 export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST) {
   console.log("MAIN_COMBAT_LOOP called");
 
-  const startingMap = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
-  console.log("Starting map:", JSON.stringify(startingMap));
+//  const startingMap = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
+
+  const [GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
+
+  console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS);
+
+  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES);
+
+//  console.log("Starting map:" + startingMap);
+
+//  console.log("Starting map:", JSON.stringify(startingMap));
+
 
   return { success: true };
 }
 
+
 /**
  * STARTING_MAP_SQUARES
- *
- * Places all 40 bots on a 10×10 map at the edge squares (columns 1-2 and 9-10
- * of each row). Returns an array of 100 elements — each is either a
- * combatBotNumber or 0.
+ * 
+ * Create a game map for Bot starting positions, with numbers for each space, 
+ * numbers 1 - 100, and places Bot ID numbers where the Bot is and zero values
+ * for each Space where there is no Bot. These values will be separated by
+ * commas.
+ * This function takes in the object ALL_BOTS_IN_COMBAT_LIST and returns the 
+ * object GAME_MAP_BOTS.
  */
 export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST) {
   console.log("STARTING_MAP_SQUARES called");
@@ -113,22 +199,222 @@ export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST) {
     }
 
     let botIndex = 0;
+    const GAME_MAP_SQUARES = [];
     const GAME_MAP_BOTS = [];
     for (let square = 1; square <= 100; square++) {
       if (BOT_SQUARES.has(square) && botIndex < ALL_BOTS_IN_COMBAT_LIST.length) {
         GAME_MAP_BOTS.push(ALL_BOTS_IN_COMBAT_LIST[botIndex].combatBotNumber);
         botIndex++;
+        GAME_MAP_SQUARES.push(square);
       } else {
         GAME_MAP_BOTS.push(0);
+        GAME_MAP_SQUARES.push(square);
       }
     }
 
+     window.alert("***STRING: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
     console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
-    return GAME_MAP_BOTS;
+	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
+	
+    return [GAME_MAP_BOTS, GAME_MAP_SQUARES];
   } catch (error) {
     console.error("STARTING_MAP_SQUARES error:", error);
     return [];
   }
+}
+
+
+
+/**
+ * EXECUTE_ORDERS_LIST
+ */
+export async function EXECUTE_ORDERS_LIST(recordOrdersList, allBotsInCombatList) {
+  console.log("EXECUTE_ORDERS_LIST called");
+
+  try {
+    let CURRENT_IS_CONDITIONAL = "FALSE";
+    let ACTIONS_COUNT_TEMP = 0;
+    const ACTIONS_MAX_TEMP = recordOrdersList.length;
+
+    for (const CURRENT_COMMAND of recordOrdersList) {
+      const ALL_BOTS_IN_COMBAT_LIST_TEMP = [...allBotsInCombatList];
+
+      while (ACTIONS_COUNT_TEMP <= ACTIONS_MAX_TEMP) {
+        if (CURRENT_IS_CONDITIONAL === "FALSE") {
+          ACTIONS_COUNT_TEMP++;
+
+          if      (CURRENT_COMMAND === "Move Forward 1")              await CURRENT_MOVE_BOT1();
+          else if (CURRENT_COMMAND === "Move Forward 2")            { await CURRENT_MOVE_BOT2(); await CURRENT_MOVE_BOT1(); }
+          else if (CURRENT_COMMAND === "Move Forward 3")            { await CURRENT_MOVE_BOT3(); await CURRENT_MOVE_BOT1(); }
+          else if (CURRENT_COMMAND === "Move Forward 4")              await CURRENT_MOVE_BOT4();
+          else if (CURRENT_COMMAND === "Move Forward 5")              await CURRENT_MOVE_BOT5();
+          else if (CURRENT_COMMAND === "Move Forward Max")            await CURRENT_MOVE_BOTMAX();
+          else if (CURRENT_COMMAND === "Move Backward 1")            await CURRENT_MOVE_BOT_BACK1();
+          else if (CURRENT_COMMAND === "Move Backward 2")            await CURRENT_MOVE_BOT_BACK2();
+          else if (CURRENT_COMMAND === "Move Backward 3")            await CURRENT_MOVE_BOT_BACK3();
+          else if (CURRENT_COMMAND === "Turn Left")                   await CURRENT_ROTATE_BOT("left");
+          else if (CURRENT_COMMAND === "Turn Right")                  await CURRENT_ROTATE_BOT("right");
+          else if (CURRENT_COMMAND === "Angle Left")                  await CURRENT_ROTATE_BOT("left");
+          else if (CURRENT_COMMAND === "Angle Right")                 await CURRENT_ROTATE_BOT("right");
+          else if (CURRENT_COMMAND === "Move toward located Enemy")  await CURRENT_MOVE_BLOCKED_ENEMY();
+          else if (CURRENT_COMMAND === "Move Toward Located Enemy")  await CURRENT_MOVE_TOWARD_ENEMY();
+          else if (CURRENT_COMMAND === "Fire Master Weapon")          await FIRE_MASTER_WEAPON();
+          else if (CURRENT_COMMAND === "Fire Seconday Weapon")        await FIRE_SECONDARY_WEAPON();
+          else if (CURRENT_COMMAND === "Fire All")                    await FIRE_ALL_WEAPONS();
+          else if (CURRENT_COMMAND === "Activate Targeting Map")     await CURRENT_ACTIVATE_SCANNER();
+          else if (CURRENT_COMMAND === "Activate Self-Destruct")     await CURRENT_ACTIVATE_SELF_DESTRUCT();
+          else if (CURRENT_COMMAND === "If No Allies Detected ...")   CURRENT_IS_CONDITIONAL = "TRUE";
+          else if (CURRENT_COMMAND === "If Facing Off-Map ...")     { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ROTATE_BOT("left"); }
+          else if (CURRENT_COMMAND === "If Any Enemies in Range ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await IDENTIFY_ANY_ENEMIES(); }
+          else if (CURRENT_COMMAND === "If Your Armor is Below 500 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(500); }
+          else if (CURRENT_COMMAND === "If Your Armor is Below 300 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(300); }
+          else if (CURRENT_COMMAND === "If Your Armor is Below 100 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(100); }
+
+          break;
+        } else {
+          CURRENT_IS_CONDITIONAL = "FALSE";
+          break;
+        }
+      }
+    }
+
+    console.log(`EXECUTE_ORDERS_LIST complete. Actions: ${ACTIONS_COUNT_TEMP}`);
+    return { success: true };
+  } catch (error) {
+    console.error("EXECUTE_ORDERS_LIST error:", error);
+    return { success: false, message: "Failed to execute orders list." };
+  }
+}
+
+
+
+
+
+
+// ============================================================================
+// MOVEMENT FUNCTIONS (placeholder implementations)
+// ============================================================================
+
+export async function CURRENT_MOVE_BOT1()       { console.log("CURRENT_MOVE_BOT1"); }
+export async function CURRENT_MOVE_BOT2()       { console.log("CURRENT_MOVE_BOT2"); }
+export async function CURRENT_MOVE_BOT3()       { console.log("CURRENT_MOVE_BOT3"); }
+export async function CURRENT_MOVE_BOT4()       { console.log("CURRENT_MOVE_BOT4"); }
+export async function CURRENT_MOVE_BOT5()       { console.log("CURRENT_MOVE_BOT5"); }
+export async function CURRENT_MOVE_BOTMAX()     { console.log("CURRENT_MOVE_BOTMAX"); }
+export async function CURRENT_MOVE_BOT_BACK1()  { console.log("CURRENT_MOVE_BOT_BACK1"); }
+export async function CURRENT_MOVE_BOT_BACK2()  { console.log("CURRENT_MOVE_BOT_BACK2"); }
+export async function CURRENT_MOVE_BOT_BACK3()  { console.log("CURRENT_MOVE_BOT_BACK3"); }
+
+export async function CURRENT_ROTATE_BOT(direction) {
+  console.log(`CURRENT_ROTATE_BOT: ${direction}`);
+}
+
+export async function CURRENT_MOVE_BLOCKED_ENEMY() { console.log("CURRENT_MOVE_BLOCKED_ENEMY"); }
+export async function CURRENT_MOVE_TOWARD_ENEMY()  { console.log("CURRENT_MOVE_TOWARD_ENEMY"); }
+export async function FIRE_MASTER_WEAPON()          { console.log("FIRE_MASTER_WEAPON"); }
+export async function FIRE_SECONDARY_WEAPON()       { console.log("FIRE_SECONDARY_WEAPON"); }
+export async function FIRE_ALL_WEAPONS()            { console.log("FIRE_ALL_WEAPONS"); }
+export async function CURRENT_ACTIVATE_SCANNER()   { console.log("CURRENT_ACTIVATE_SCANNER"); }
+export async function CURRENT_ACTIVATE_SELF_DESTRUCT() { console.log("CURRENT_ACTIVATE_SELF_DESTRUCT"); }
+export async function IDENTIFY_ANY_ENEMIES()        { console.log("IDENTIFY_ANY_ENEMIES"); }
+
+export async function CURRENT_ARMOR_WEAK(threshold) {
+  console.log(`CURRENT_ARMOR_WEAK: threshold=${threshold}`);
+}
+
+// ============================================================================
+// SCANNER / TARGETING
+// ============================================================================
+
+/**
+ * CURRENT_ACTIVATE_SCANNER_FULL
+ *
+ * Activates the bot's scanner to identify enemy targets within range.
+ */
+export async function CURRENT_ACTIVATE_SCANNER_FULL(combatState) {
+  console.log("CURRENT_ACTIVATE_SCANNER_FULL called");
+
+  try {
+    let CURRENT_BULLET_TARGET1 = "";
+    let CURRENT_BULLET_TARGET2 = "";
+
+    const SCANNER_RANGE      = combatState.RECORD_BOT_SENSOR_RANGE || 1;
+    const CURRENT_TARGETING_MAP = combatState.RECORD_TARGETING_MAP || [];
+    const ROTATED_MAP        = await ROTATE_TARGETING_MAP(CURRENT_TARGETING_MAP, combatState.CURRENT_BOT_FACING);
+    let GAME_MAP_TARGETING   = [...combatState.GAME_MAP_BOTS];
+
+    for (let i = 0; i < GAME_MAP_TARGETING.length; i++) {
+      const SPACE_CURRENT = GAME_MAP_TARGETING[i];
+      if (SPACE_CURRENT !== 0 && SPACE_CURRENT !== "0,") {
+        const isInRange = calculateDistance(i, combatState.CURRENT_BOT_LOCATION, SCANNER_RANGE);
+        GAME_MAP_TARGETING[i] = isInRange ? (ROTATED_MAP[i] || "0,") : "0,";
+      }
+    }
+
+    const ALL_BOTS_IN_COMBAT_LIST_TEMP = combatState.allBotsInCombatList || [];
+
+    for (const CURRENT_BOT_TEMP of ALL_BOTS_IN_COMBAT_LIST_TEMP) {
+      if (CURRENT_BULLET_TARGET2 !== "") break;
+
+      const BOT_LOCATION_TEMP        = CURRENT_BOT_TEMP.location || "0,0";
+      const CURRENT_TARGETING_BOT_ARMY = CURRENT_BOT_TEMP.army || 1;
+
+      for (let mapIndex = 0; mapIndex < GAME_MAP_TARGETING.length; mapIndex++) {
+        const SPACE_TEMP = GAME_MAP_TARGETING[mapIndex];
+        if (SPACE_TEMP !== "0," && SPACE_TEMP !== 0) {
+          GAME_MAP_TARGETING[mapIndex] = CURRENT_BOT_TEMP.botNumber || "0,";
+          if (CURRENT_TARGETING_BOT_ARMY !== combatState.RECORD_BOT_ARMY) {
+            if      (CURRENT_BULLET_TARGET1 === "") CURRENT_BULLET_TARGET1 = BOT_LOCATION_TEMP;
+            else if (CURRENT_BULLET_TARGET2 === "") CURRENT_BULLET_TARGET2 = BOT_LOCATION_TEMP;
+          }
+        }
+      }
+    }
+
+    console.log(`Scanner: Target1=${CURRENT_BULLET_TARGET1}, Target2=${CURRENT_BULLET_TARGET2}`);
+    return { ...combatState, CURRENT_BULLET_TARGET1, CURRENT_BULLET_TARGET2, GAME_MAP_TARGETING };
+  } catch (error) {
+    console.error("CURRENT_ACTIVATE_SCANNER_FULL error:", error);
+    return combatState;
+  }
+}
+
+function calculateDistance(space1, location2, maxRange) {
+  const [x2, y2] = location2.split(",").map(Number);
+  const x1 = space1 % 10;
+  const y1 = Math.floor(space1 / 10);
+  return Math.abs(x1 - x2) + Math.abs(y1 - y2) <= maxRange;
+}
+
+/**
+ * ROTATE_TARGETING_MAP
+ */
+export async function ROTATE_TARGETING_MAP(targetingMap, facing) {
+  console.log(`ROTATE_TARGETING_MAP: facing=${facing}`);
+
+  try {
+    const rotationMap = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+    const rotations = rotationMap[facing] || 0;
+    let rotatedMap = [...targetingMap];
+    for (let r = 0; r < rotations; r++) {
+      rotatedMap = rotateGridClockwise(rotatedMap);
+    }
+    return rotatedMap;
+  } catch (error) {
+    console.error("ROTATE_TARGETING_MAP error:", error);
+    return targetingMap;
+  }
+}
+
+function rotateGridClockwise(grid) {
+  const size = 7;
+  const rotated = Array(grid.length).fill(0);
+  for (let i = 0; i < size; i++) {
+    for (let j = 0; j < size; j++) {
+      rotated[j * size + (size - 1 - i)] = grid[i * size + j];
+    }
+  }
+  return rotated;
 }
 
 /**
@@ -370,67 +656,6 @@ export async function GET_VALUES_FROM_RECORDS(currentBot, armyNumber, currentBot
 }
 
 /**
- * EXECUTE_ORDERS_LIST
- */
-export async function EXECUTE_ORDERS_LIST(recordOrdersList, allBotsInCombatList) {
-  console.log("EXECUTE_ORDERS_LIST called");
-
-  try {
-    let CURRENT_IS_CONDITIONAL = "FALSE";
-    let ACTIONS_COUNT_TEMP = 0;
-    const ACTIONS_MAX_TEMP = recordOrdersList.length;
-
-    for (const CURRENT_COMMAND of recordOrdersList) {
-      const ALL_BOTS_IN_COMBAT_LIST_TEMP = [...allBotsInCombatList];
-
-      while (ACTIONS_COUNT_TEMP <= ACTIONS_MAX_TEMP) {
-        if (CURRENT_IS_CONDITIONAL === "FALSE") {
-          ACTIONS_COUNT_TEMP++;
-
-          if      (CURRENT_COMMAND === "Move Forward 1")              await CURRENT_MOVE_BOT1();
-          else if (CURRENT_COMMAND === "Move Forward 2")            { await CURRENT_MOVE_BOT2(); await CURRENT_MOVE_BOT1(); }
-          else if (CURRENT_COMMAND === "Move Forward 3")            { await CURRENT_MOVE_BOT3(); await CURRENT_MOVE_BOT1(); }
-          else if (CURRENT_COMMAND === "Move Forward 4")              await CURRENT_MOVE_BOT4();
-          else if (CURRENT_COMMAND === "Move Forward 5")              await CURRENT_MOVE_BOT5();
-          else if (CURRENT_COMMAND === "Move Forward Max")            await CURRENT_MOVE_BOTMAX();
-          else if (CURRENT_COMMAND === "Move Backward 1")            await CURRENT_MOVE_BOT_BACK1();
-          else if (CURRENT_COMMAND === "Move Backward 2")            await CURRENT_MOVE_BOT_BACK2();
-          else if (CURRENT_COMMAND === "Move Backward 3")            await CURRENT_MOVE_BOT_BACK3();
-          else if (CURRENT_COMMAND === "Turn Left")                   await CURRENT_ROTATE_BOT("left");
-          else if (CURRENT_COMMAND === "Turn Right")                  await CURRENT_ROTATE_BOT("right");
-          else if (CURRENT_COMMAND === "Angle Left")                  await CURRENT_ROTATE_BOT("left");
-          else if (CURRENT_COMMAND === "Angle Right")                 await CURRENT_ROTATE_BOT("right");
-          else if (CURRENT_COMMAND === "Move toward located Enemy")  await CURRENT_MOVE_BLOCKED_ENEMY();
-          else if (CURRENT_COMMAND === "Move Toward Located Enemy")  await CURRENT_MOVE_TOWARD_ENEMY();
-          else if (CURRENT_COMMAND === "Fire Master Weapon")          await FIRE_MASTER_WEAPON();
-          else if (CURRENT_COMMAND === "Fire Seconday Weapon")        await FIRE_SECONDARY_WEAPON();
-          else if (CURRENT_COMMAND === "Fire All")                    await FIRE_ALL_WEAPONS();
-          else if (CURRENT_COMMAND === "Activate Targeting Map")     await CURRENT_ACTIVATE_SCANNER();
-          else if (CURRENT_COMMAND === "Activate Self-Destruct")     await CURRENT_ACTIVATE_SELF_DESTRUCT();
-          else if (CURRENT_COMMAND === "If No Allies Detected ...")   CURRENT_IS_CONDITIONAL = "TRUE";
-          else if (CURRENT_COMMAND === "If Facing Off-Map ...")     { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ROTATE_BOT("left"); }
-          else if (CURRENT_COMMAND === "If Any Enemies in Range ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await IDENTIFY_ANY_ENEMIES(); }
-          else if (CURRENT_COMMAND === "If Your Armor is Below 500 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(500); }
-          else if (CURRENT_COMMAND === "If Your Armor is Below 300 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(300); }
-          else if (CURRENT_COMMAND === "If Your Armor is Below 100 ...") { CURRENT_IS_CONDITIONAL = "TRUE"; await CURRENT_ARMOR_WEAK(100); }
-
-          break;
-        } else {
-          CURRENT_IS_CONDITIONAL = "FALSE";
-          break;
-        }
-      }
-    }
-
-    console.log(`EXECUTE_ORDERS_LIST complete. Actions: ${ACTIONS_COUNT_TEMP}`);
-    return { success: true };
-  } catch (error) {
-    console.error("EXECUTE_ORDERS_LIST error:", error);
-    return { success: false, message: "Failed to execute orders list." };
-  }
-}
-
-/**
  * START_COMBAT
  */
 export async function START_COMBAT() {
@@ -439,171 +664,5 @@ export async function START_COMBAT() {
 }
 
 // ============================================================================
-// MOVEMENT FUNCTIONS (placeholder implementations)
-// ============================================================================
-
-export async function CURRENT_MOVE_BOT1()       { console.log("CURRENT_MOVE_BOT1"); }
-export async function CURRENT_MOVE_BOT2()       { console.log("CURRENT_MOVE_BOT2"); }
-export async function CURRENT_MOVE_BOT3()       { console.log("CURRENT_MOVE_BOT3"); }
-export async function CURRENT_MOVE_BOT4()       { console.log("CURRENT_MOVE_BOT4"); }
-export async function CURRENT_MOVE_BOT5()       { console.log("CURRENT_MOVE_BOT5"); }
-export async function CURRENT_MOVE_BOTMAX()     { console.log("CURRENT_MOVE_BOTMAX"); }
-export async function CURRENT_MOVE_BOT_BACK1()  { console.log("CURRENT_MOVE_BOT_BACK1"); }
-export async function CURRENT_MOVE_BOT_BACK2()  { console.log("CURRENT_MOVE_BOT_BACK2"); }
-export async function CURRENT_MOVE_BOT_BACK3()  { console.log("CURRENT_MOVE_BOT_BACK3"); }
-
-export async function CURRENT_ROTATE_BOT(direction) {
-  console.log(`CURRENT_ROTATE_BOT: ${direction}`);
-}
-
-export async function CURRENT_MOVE_BLOCKED_ENEMY() { console.log("CURRENT_MOVE_BLOCKED_ENEMY"); }
-export async function CURRENT_MOVE_TOWARD_ENEMY()  { console.log("CURRENT_MOVE_TOWARD_ENEMY"); }
-export async function FIRE_MASTER_WEAPON()          { console.log("FIRE_MASTER_WEAPON"); }
-export async function FIRE_SECONDARY_WEAPON()       { console.log("FIRE_SECONDARY_WEAPON"); }
-export async function FIRE_ALL_WEAPONS()            { console.log("FIRE_ALL_WEAPONS"); }
-export async function CURRENT_ACTIVATE_SCANNER()   { console.log("CURRENT_ACTIVATE_SCANNER"); }
-export async function CURRENT_ACTIVATE_SELF_DESTRUCT() { console.log("CURRENT_ACTIVATE_SELF_DESTRUCT"); }
-export async function IDENTIFY_ANY_ENEMIES()        { console.log("IDENTIFY_ANY_ENEMIES"); }
-
-export async function CURRENT_ARMOR_WEAK(threshold) {
-  console.log(`CURRENT_ARMOR_WEAK: threshold=${threshold}`);
-}
-
-// ============================================================================
-// SCANNER / TARGETING
-// ============================================================================
-
-/**
- * CURRENT_ACTIVATE_SCANNER_FULL
- *
- * Activates the bot's scanner to identify enemy targets within range.
- */
-export async function CURRENT_ACTIVATE_SCANNER_FULL(combatState) {
-  console.log("CURRENT_ACTIVATE_SCANNER_FULL called");
-
-  try {
-    let CURRENT_BULLET_TARGET1 = "";
-    let CURRENT_BULLET_TARGET2 = "";
-
-    const SCANNER_RANGE      = combatState.RECORD_BOT_SENSOR_RANGE || 1;
-    const CURRENT_TARGETING_MAP = combatState.RECORD_TARGETING_MAP || [];
-    const ROTATED_MAP        = await ROTATE_TARGETING_MAP(CURRENT_TARGETING_MAP, combatState.CURRENT_BOT_FACING);
-    let GAME_MAP_TARGETING   = [...combatState.GAME_MAP_BOTS];
-
-    for (let i = 0; i < GAME_MAP_TARGETING.length; i++) {
-      const SPACE_CURRENT = GAME_MAP_TARGETING[i];
-      if (SPACE_CURRENT !== 0 && SPACE_CURRENT !== "0,") {
-        const isInRange = calculateDistance(i, combatState.CURRENT_BOT_LOCATION, SCANNER_RANGE);
-        GAME_MAP_TARGETING[i] = isInRange ? (ROTATED_MAP[i] || "0,") : "0,";
-      }
-    }
-
-    const ALL_BOTS_IN_COMBAT_LIST_TEMP = combatState.allBotsInCombatList || [];
-
-    for (const CURRENT_BOT_TEMP of ALL_BOTS_IN_COMBAT_LIST_TEMP) {
-      if (CURRENT_BULLET_TARGET2 !== "") break;
-
-      const BOT_LOCATION_TEMP        = CURRENT_BOT_TEMP.location || "0,0";
-      const CURRENT_TARGETING_BOT_ARMY = CURRENT_BOT_TEMP.army || 1;
-
-      for (let mapIndex = 0; mapIndex < GAME_MAP_TARGETING.length; mapIndex++) {
-        const SPACE_TEMP = GAME_MAP_TARGETING[mapIndex];
-        if (SPACE_TEMP !== "0," && SPACE_TEMP !== 0) {
-          GAME_MAP_TARGETING[mapIndex] = CURRENT_BOT_TEMP.botNumber || "0,";
-          if (CURRENT_TARGETING_BOT_ARMY !== combatState.RECORD_BOT_ARMY) {
-            if      (CURRENT_BULLET_TARGET1 === "") CURRENT_BULLET_TARGET1 = BOT_LOCATION_TEMP;
-            else if (CURRENT_BULLET_TARGET2 === "") CURRENT_BULLET_TARGET2 = BOT_LOCATION_TEMP;
-          }
-        }
-      }
-    }
-
-    console.log(`Scanner: Target1=${CURRENT_BULLET_TARGET1}, Target2=${CURRENT_BULLET_TARGET2}`);
-    return { ...combatState, CURRENT_BULLET_TARGET1, CURRENT_BULLET_TARGET2, GAME_MAP_TARGETING };
-  } catch (error) {
-    console.error("CURRENT_ACTIVATE_SCANNER_FULL error:", error);
-    return combatState;
-  }
-}
-
-function calculateDistance(space1, location2, maxRange) {
-  const [x2, y2] = location2.split(",").map(Number);
-  const x1 = space1 % 10;
-  const y1 = Math.floor(space1 / 10);
-  return Math.abs(x1 - x2) + Math.abs(y1 - y2) <= maxRange;
-}
-
-/**
- * ROTATE_TARGETING_MAP
- */
-export async function ROTATE_TARGETING_MAP(targetingMap, facing) {
-  console.log(`ROTATE_TARGETING_MAP: facing=${facing}`);
-
-  try {
-    const rotationMap = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
-    const rotations = rotationMap[facing] || 0;
-    let rotatedMap = [...targetingMap];
-    for (let r = 0; r < rotations; r++) {
-      rotatedMap = rotateGridClockwise(rotatedMap);
-    }
-    return rotatedMap;
-  } catch (error) {
-    console.error("ROTATE_TARGETING_MAP error:", error);
-    return targetingMap;
-  }
-}
-
-function rotateGridClockwise(grid) {
-  const size = 7;
-  const rotated = Array(grid.length).fill(0);
-  for (let i = 0; i < size; i++) {
-    for (let j = 0; j < size; j++) {
-      rotated[j * size + (size - 1 - i)] = grid[i * size + j];
-    }
-  }
-  return rotated;
-}
-
-// ============================================================================
 // ARMY SETUP
 // ============================================================================
-
-/**
- * CREATE_ALL_BOTS_IN_COMBAT_LIST
- *
- * Merges both army bot lists into a single interleaved list in random order.
- * Randomly decides which army goes first.
- */
-export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
-  const firstArmy = Math.floor(Math.random() * 2) + 1;
-
-  const shuffle = (arr) => {
-    const a = [...arr];
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-  };
-
-  const shuffledArmy1 = shuffle(army1Bots);
-  const shuffledArmy2 = shuffle(army2Bots);
-
-  const allBots = [];
-  const maxLength = Math.max(shuffledArmy1.length, shuffledArmy2.length);
-
-  for (let i = 0; i < maxLength; i++) {
-    if (firstArmy === 1) {
-      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
-      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
-    } else {
-      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
-      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
-    }
-  }
-
-  return allBots.map((bot, index) => ({
-    ...bot,
-    combatBotNumber: bot.botNumber || index + 1,
-  }));
-}

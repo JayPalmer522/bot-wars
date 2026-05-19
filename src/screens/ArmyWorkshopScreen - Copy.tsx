@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   Box,
   Button,
@@ -22,49 +22,13 @@ export default function ArmyWorkshopScreen() {
 
   // Army name dropdown
   const [armyName, setArmyName] = useState("");
-  const [armyNames, setArmyNames] = useState<string[]>([]);
 
   // Bot selection
-  const [selectedBot, setSelectedBot] = useState("");
-  const [botNames, setBotNames] = useState<string[]>([]);
+  const [selectedBot, setSelectedBot] = useState("Default Army Bot Small");
 
   // Army bot list
   const [armyBots, setArmyBots] = useState<string[]>([]);
   const [selectedBotIndex, setSelectedBotIndex] = useState<number | null>(null);
-
-  // Load army and bot names on mount
-  useEffect(() => {
-    async function loadData() {
-      const armies = await db.armies.orderBy("name").toArray();
-      setArmyNames(armies.map(a => a.name));
-
-      const bots = await db.bots.orderBy("name").toArray();
-      setBotNames(bots.map(b => b.name));
-      if (bots.length > 0) {
-        setSelectedBot(bots[0].name);
-      }
-    }
-    loadData();
-  }, []);
-
-  // Load army bots when army name changes
-  useEffect(() => {
-    async function loadArmyBots() {
-      if (armyName) {
-        const army = await db.armies.where("name").equals(armyName).first();
-        if (army) {
-          const botNames = await Promise.all(army.botIds.map(async (id) => {
-            const bot = await db.bots.get(id);
-            return bot ? bot.name : "";
-          }));
-          setArmyBots(botNames.filter(name => name));
-        }
-      } else {
-        setArmyBots([]);
-      }
-    }
-    loadArmyBots();
-  }, [armyName]);
 
   // Placeholder validation routine
   function VERIFY_ARMY_CHECK() {
@@ -212,7 +176,7 @@ export default function ArmyWorkshopScreen() {
             onChange={(event, newValue) => setArmyName(newValue || "")}
             inputValue={armyName}
             onInputChange={(event, newInputValue) => setArmyName(newInputValue)}
-            options={armyNames}
+            options={["Default Army Cheap", "Default Army Medium", "Default Army Expensive"]}
             freeSolo
             renderInput={(params) => (
               <TextField
@@ -280,7 +244,7 @@ export default function ArmyWorkshopScreen() {
             "Select Bot:",
             selectedBot,
             setSelectedBot,
-            botNames
+            ["Default Army Bot Small", "Default Army Bot Medium", "Default Army Bot Large"]
           )}
 
           <Button
@@ -316,12 +280,7 @@ export default function ArmyWorkshopScreen() {
                 <ListItemButton
                   selected={selectedBotIndex === index}
                   onClick={() => setSelectedBotIndex(index)}
-                  sx={{
-                    fontFamily: "Courier New",
-                    fontSize: "12pt",
-                    fontWeight: "bold",
-                    color: "black",
-                  }}
+                  sx={{ fontFamily: "Courier New" }}
                 >
                   {bot}
                 </ListItemButton>
