@@ -98,10 +98,11 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
       settings,
       isActive: true,
     };
-
+    console.log("COMBAT_RECORD:", JSON.stringify(COMBAT_RECORD));
+	
     console.log(`Combat initialized: ${battleState.battleId}`);
 
-    await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST);
+    await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 
     return { success: true, battleId: battleState.battleId, combatRecord: COMBAT_RECORD };
   } catch (error) {
@@ -155,19 +156,18 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
  *
  * Begins the battle simulation loop.
  */
-export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST) {
+export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
   console.log("MAIN_COMBAT_LOOP called");
 
 //  const startingMap = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
 
-  const [GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST);
+  const [GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 
   console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS);
 
   console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES);
 
 //  console.log("Starting map:" + startingMap);
-
 //  console.log("Starting map:", JSON.stringify(startingMap));
 
 
@@ -185,9 +185,35 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST) {
  * This function takes in the object ALL_BOTS_IN_COMBAT_LIST and returns the 
  * object GAME_MAP_BOTS.
  */
-export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST) {
+export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
   console.log("STARTING_MAP_SQUARES called");
 
+
+///////////////////////////////////////////////////
+///////////// Creates a string ////////////////////
+///////////////////////////////////////////////////
+//  let MyFacing = "West";
+//  let BotFacing = "";
+//  for (let MyTemp = 1; MyTemp <= 40; MyTemp++) {
+//	if (MyFacing == "West"){
+//		BotFacing = BotFacing + MyTemp + ", West, ";
+//     window.alert(" BotFacing: " + BotFacing);
+//		MyFacing = "East";
+//	}
+//	else {
+//		BotFacing = BotFacing + MyTemp + ", East, ";		
+//		MyFacing = "West";
+//	}	  
+//  }
+//    console.log(" BotFacing: " + BotFacing);
+///////////////////////////////////////////////////
+///////////// Creates an array ////////////////////
+///////////////////////////////////////////////////
+let MyBotFacing = ['North','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','South','South','South','South'];
+
+let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30','31','39','32','40','41','49','42','50','51','59','52','60','61','69','62','70','71','79','72','80','81','89','82','90','91','99','92','100'];
+	
+	
   try {
     // Edge squares: columns 1-2 and 9-10 of each row on a 10×10 grid
     const BOT_SQUARES = new Set();
@@ -204,17 +230,43 @@ export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST) {
     for (let square = 1; square <= 100; square++) {
       if (BOT_SQUARES.has(square) && botIndex < ALL_BOTS_IN_COMBAT_LIST.length) {
         GAME_MAP_BOTS.push(ALL_BOTS_IN_COMBAT_LIST[botIndex].combatBotNumber);
+		let TEMP_BOT_NUMBER = ALL_BOTS_IN_COMBAT_LIST[botIndex].combatBotNumber;
         botIndex++;
         GAME_MAP_SQUARES.push(square);
+///////////////  ADD TO COMBAT_RECORD /////////////////////////		
+		COMBAT_RECORD.push("Place Bot " + TEMP_BOT_NUMBER + " facing "+ MyBotFacing[TEMP_BOT_NUMBER] + " on ANI_MAP_SPACE " + MyBotStarting[botIndex] + ".");
+		
       } else {
         GAME_MAP_BOTS.push(0);
         GAME_MAP_SQUARES.push(square);
       }
     }
+	console.log(" BOT_SQUARES(botIndex): " + botIndex);
+	console.log(" BOT_SQUARES(botIndex): " + JSON.stringify(botIndex));
+/*
+"Place Bot 1 facing West on ANI_MAP_SPACE 1.",
+"Place Bot 2 facing East on ANI_MAP_SPACE 9.",
+"Place Bot 3 facing West on ANI_MAP_SPACE 2.",
+"Place Bot 4 facing East on ANI_MAP_SPACE 10.",
+"Place Bot 5 facing West on ANI_MAP_SPACE 11.",
+"Place Bot 6 facing East on ANI_MAP_SPACE 19.",
+"Place Bot 7 facing West on ANI_MAP_SPACE 12.",
+"Place Bot 8 facing East on ANI_MAP_SPACE 20.",
+"Place Bot 9 facing West on ANI_MAP_SPACE 21.",
+"Place Bot 10 facing East on ANI_MAP_SPACE 29.",
+"Place Bot 11 facing West on ANI_MAP_SPACE 22.",
+"Place Bot 12 facing East on ANI_MAP_SPACE 30.",
+"Place Bot 13 facing West on ANI_MAP_SPACE 31.",
+"Place Bot 14 facing East on ANI_MAP_SPACE 39.",
+"Place Bot 15 facing West on ANI_MAP_SPACE 32.",
+"Place Bot 16 facing East on ANI_MAP_SPACE 40.",
+"Place Bot 17 facing West on ANI_MAP_SPACE 41.",
+*/
 
      window.alert("***STRING: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
     console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
 	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
+    console.log("COMBAT_RECORD3: ", JSON.stringify(COMBAT_RECORD));
 	
     return [GAME_MAP_BOTS, GAME_MAP_SQUARES];
   } catch (error) {
@@ -422,6 +474,8 @@ function rotateGridClockwise(grid) {
  */
 export async function PROCESS_TURN(currentArmy, targetArmy) {
   console.log(`PROCESS_TURN: ${currentArmy.name} attacking ${targetArmy.name}`);
+  
+  
   return { success: true };
 }
 
