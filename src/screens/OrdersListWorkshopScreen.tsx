@@ -68,6 +68,11 @@ export default function OrdersListWorkshopScreen() {
     }
     try {
       await db.orderLists.put({ name: ordersListName.trim(), commands });
+//	        message: "." +  name: ordersListName.trim() + "." + commands + ".";
+
+
+//		errorMessages += "." +  name: ordersListName.trim() + "." + commands + ".";
+//	  message: errorMessages;
       alert("Orders List Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));

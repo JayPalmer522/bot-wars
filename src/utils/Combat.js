@@ -200,10 +200,53 @@ console.log("...........TOO MANY TURNS...........");
 	for (var j = 0; j < ALL_BOTS_IN_COMBAT_LIST.length; j++){
 //console.log(" !!!!!!!: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j]));
 console.log(" VVVVVVV: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].name) + "   " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].combatBotNumber) + "  ordersListId: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId));
-		
+
+    let commands = 3;
+	const CURRENT_ORDERS_LIST = await db.orderLists.get(commands);
+	
+//console.log(" ORDERS1: " + JSON.stringify(db.orderLists.get(db.orderLists.get(name)));
+
+
+console.log(" ORDERS2: " + JSON.stringify(db.orderLists.get(commands)));
+
+
+console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(10)));
+
+console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(11)));
+
+console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(12)));
+
+console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(100)));
+
+/*
+
+	"Default Orders List 5 TEST"	4	
+{name: 'Default Orders List 5 TEST', commands: Array(5), id: 4}
+commands
+: 
+(5) ['Move Forward 1', 'Move Backward 3', 'Activate Targeting Map', 'Move toward located Enemy', 'Fire All']
+id
+: 
+4
+name
+: 
+"Default Orders List 5 TEST"
+5	"Default Orders List 5A"	7	
+{name: 'Default Orders List 5A', commands: Array(5), id: 7}
+6	"TEST JAY 1"	6	
+{name: 'TEST JAY 1', commands: Array(6), id: 6}
+
+
+
+ ORDERS2: {"_listeners":[],"_lib":false,"_PSD":{"id":"global","global":true,"ref":14,"unhandleds":[],"pgp":false,"env":{"PromiseProp":{"writable":true,"enumerable":false,"configurable":true}}},"_state":null,"_value":null,"_consoleTask":{}}
+
+*/
 
 
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
+	
+	
+	
 //  }//while TOO_MANY_TURNS <= 10.
 
 
