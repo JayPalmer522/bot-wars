@@ -4,7 +4,10 @@
  * Handles all combat simulation logic, turn-based mechanics, and battle calculations.
  */
 
+//import db from "../db"; // missing or wrong path
 import { db } from "../db/db";
+
+//import { db } from "../db/db";
 
 export let SHOW_COMBAT_RECORD = "TRUE";
 
@@ -154,12 +157,12 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
 
 /**
  * MAIN_COMBAT_LOOP
- * 
+ * ///////////////////////////////////////////////
  * Begins the battle simulation loop. 
  * MANUALLY CREATED BY JAY!
- * 
+ * /////////////////////////////////////////////
  * The MAIN_COMBAT_LOOP function takes in the ALL_BOTS_IN_COMBAT_LIST. 
- *
+ * ////////////////////////////////////////////
  * The MAIN_COMBAT_LOOP function MUST TAKE IN COMBAT_RECORD, TOO! 
  *
  * Then it calls the function STARTING_MAP_SQUARES, passing to it the 
@@ -202,21 +205,95 @@ console.log("...........TOO MANY TURNS...........");
 console.log(" VVVVVVV: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].name) + "   " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].combatBotNumber) + "  ordersListId: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId));
 
     let commands = 3;
-	const CURRENT_ORDERS_LIST = await db.orderLists.get(commands);
 	
-//console.log(" ORDERS1: " + JSON.stringify(db.orderLists.get(db.orderLists.get(name)));
-
+	const CURRENT_ORDERS_LIST = await db.orderLists.get(commands); //DOES NOT BREAK!!!
+	
+	
+	
+//FAILED TO INITIALIZE	const CURRENT_ORDERS_LIST = await db.orderLists.commands.get(Array);
 
 console.log(" ORDERS2: " + JSON.stringify(db.orderLists.get(commands)));
 
 
-console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(10)));
 
-console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(11)));
 
-console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(12)));
+//WORKS!      const order = await db.orderLists.name;
 
-console.log(" ORDERS3: " + JSON.stringify(db.orderLists.get(100)));
+
+
+const order = await db.orderLists.toArray()
+
+//await db.orderLists.name;
+
+
+//const order = (await db.orderLists.get(1)).commands[1]);
+console.log(" ORDERS3A: " + JSON.stringify(order));
+console.log(db.orderLists);
+
+console.log(JSON.stringify(order)));
+console.log(await db.orderLists.get(j));
+
+//window.alert(".. ORDERS3A: " + JSON.stringify(order)); // SHOW ALL!!!!!
+//window.alert(".. ORDERS3A: " + (await db.orderLists.get(1)).commands[1]); //SHOW COMMANDS!!!
+
+//My current tab is: 
+
+//http://localhost/combat  
+
+//When I hit F12, I think it responded with this:
+//[vite] hot updated: /src/screens/BotWorkshopScreen.tsx
+//client:906 
+//[vite] hot updated: /src/screens/CombatScreen.tsx
+
+//Where do I run the command:
+//(await db.orderLists.get(1)).commands[1]
+
+//When I click 'TOP', my options are:
+
+//DevTools Performance Metrics
+//localhost:5173
+
+//and 
+
+//Guardio Protection for Edge Extension
+
+//I have tried both and typed 'db' <enter> on the DevTool cmd line. 
+
+//This is what I got:
+//VM6284:1 Uncaught ReferenceError: db is not defined
+//    at <anonymous>:1:1
+//(anonymous)	@	VM6284:1
+
+
+
+//console.log(" ORDERS3A: " + JSON.stringify(command));
+//console.log(" ORDERS3A: " + JSON.stringify(index));
+//console.log(" ORDERS3A: " + JSON.stringify(cmd));
+
+
+
+//console.log(await db.ordersLists.get(1));
+
+//console.log(await db.ordersLists.get(1));
+
+
+
+
+
+
+
+
+
+
+
+
+//console.log(" ORDERS3: " + JSON.stringify(db.orderLists.commands.get.id[2]));
+
+console.log(" ORDERS4: " + JSON.stringify(db.orderLists.get(11)));
+
+console.log(" ORDERS5: " + JSON.stringify(db.orderLists.get(12)));
+
+console.log(" ORDERS6: " + JSON.stringify(db.orderLists.get(100)));
 
 /*
 
@@ -246,6 +323,9 @@ name
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
 	
 	
+//BREAKS CODE console.log(" ORDERS1: " + JSON.stringify(db.orderLists.get(db.orderLists.get(name)));
+
+	
 	
 //  }//while TOO_MANY_TURNS <= 10.
 
@@ -272,6 +352,7 @@ window.alert(".........END OF MAIN COMBAT LOOP.........");
 
   return { success: true };
 }
+
 
 
 /**

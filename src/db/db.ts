@@ -1,4 +1,5 @@
-import Dexie, { type Table } from "dexie";
+
+import Dexie, { Table } from "dexie";
 
 export interface OrdersList {
   id?: number;
@@ -40,84 +41,14 @@ export interface Army {
   botIds: number[];
 }
 
-export interface BotFrame {
-  id?: number;
-  name: string;
-  slots: number;
-  nd: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotEngine {
-  id?: number;
-  name: string;
-  slots: number;
-  po: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotComputer {
-  id?: number;
-  name: string;
-  slots: number;
-  ci: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotArmor {
-  id?: number;
-  name: string;
-  slots: number;
-  ad: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotSensor {
-  id?: number;
-  name: string;
-  targets: number;
-  range: number;
-  pc: number;
-  slots: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotMaster {
-  id?: number;
-  name: string;
-  wd: number;
-  wr: number;
-  slots: number;
-  pc: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotSecondary {
-  id?: number;
-  name: string;
-  wd: number;
-  wr: number;
-  slots: number;
-  pc: number;
-  weight: number;
-  cost: number;
-}
-
-export interface BotBomb {
-  id?: number;
-  name: string;
-  wd: number;
-  slots: number;
-  pc: number;
-  weight: number;
-  cost: number;
-}
+export interface BotFrame { id?: number; name: string; slots: number; nd: number; weight: number; cost: number; }
+export interface BotEngine { id?: number; name: string; slots: number; po: number; weight: number; cost: number; }
+export interface BotComputer { id?: number; name: string; slots: number; ci: number; weight: number; cost: number; }
+export interface BotArmor { id?: number; name: string; slots: number; ad: number; weight: number; cost: number; }
+export interface BotSensor { id?: number; name: string; targets: number; range: number; pc: number; slots: number; weight: number; cost: number; }
+export interface BotMaster { id?: number; name: string; wd: number; wr: number; slots: number; pc: number; weight: number; cost: number; }
+export interface BotSecondary { id?: number; name: string; wd: number; wr: number; slots: number; pc: number; weight: number; cost: number; }
+export interface BotBomb { id?: number; name: string; wd: number; slots: number; pc: number; weight: number; cost: number; }
 
 export interface Profile {
   id?: number;
@@ -132,7 +63,7 @@ export interface Profile {
   };
 }
 
-class BotWarsDB extends Dexie {
+export class BotWarsDB extends Dexie {
   orderLists!: Table<OrdersList>;
   targetMaps!: Table<TargetMap>;
   bots!: Table<Bot>;
@@ -149,28 +80,27 @@ class BotWarsDB extends Dexie {
 
   constructor() {
     super("BotWarsDB");
-    this.version(1).stores({
-      orderLists: "++id, &name",
-      targetMaps: "++id, &name",
-      bots: "++id, &name, targetMapId, ordersListId",
-      armies: "++id, &name",
-    });
-    this.version(3).stores({
-      orderLists: "++id, &name",
-      targetMaps: "++id, &name",
-      bots: "++id, &name, targetMapId, ordersListId",
-      armies: "++id, &name",
-      botFrames: "++id, &name",
-      botEngines: "++id, &name",
-      botComputers: "++id, &name",
-      botArmors: "++id, &name",
-      botSensors: "++id, &name",
-      botMasters: "++id, &name",
-      botSecondaries: "++id, &name",
-      botBombs: "++id, &name",
-      profiles: "++id, &username, email",
+
+    this.version(4).stores({
+      orderLists: "++id,&name",
+      targetMaps: "++id,&name",
+      bots: "++id,&name,targetMapId,ordersListId",
+      armies: "++id,&name",
+      botFrames: "++id,&name",
+      botEngines: "++id,&name",
+      botComputers: "++id,&name",
+      botArmors: "++id,&name",
+      botSensors: "++id,&name",
+      botMasters: "++id,&name",
+      botSecondaries: "++id,&name",
+      botBombs: "++id,&name",
+      profiles: "++id,&username,email"
     });
   }
 }
 
 export const db = new BotWarsDB();
+
+
+
+
