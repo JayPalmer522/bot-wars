@@ -1,0 +1,340 @@
+WHOLE DATABASE BOTS ORDERSLISTS 2026_05_22:
+
+[[Prototype]]: Array(0)bots: Array(11)0: 
+armor: "Paper-Plate = FA 5 slots, 50 AD, 200 weight, 100 cost."botImage: "Default Bot Image Small"
+computer: "Dohmer-Computer = BC 1 slots, 5 CI, 0 weight, 50 cost."
+engine: "Gnat-Engine = BE 2 slots, 1000 PO, 100 weight, 300 cost."
+frame: "Micro-bot = BF 10 slots, 10 ND, 130 weight, 100 cost."
+id: 1
+move: "0"
+name: "Default Bot Small"
+ordersListId: 1
+sensor: "Blind-Night = TS identifies Max 1 targets in 1 range, 10 PC, 1 slots, 10 weight, 50 cost."
+slotsUsed: "0"
+targetMapId: 1
+totalGold: "0"
+totalPower: "0"
+totalWeight: "0"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Rubber-Hammer = WM 10 WD, 1 WR, 1 slot, 100 PC, 100 weight, 300 cost."
+weaponSecondary: "NONE = WS 0 WD, 0 WR, 0 slot, 0 PC, 0 weight, 0 cost."
+
+[[Prototype]]: Object1: 
+armor: "Tungston-Plate = FA 30 slots, 300 AD, 700 weight, 600 cost."
+botImage: "Default Bot Image Medium"
+computer: "Aristotle-Computer = BC 1 slots, 35 CI, 0 weight, 350 cost."
+engine: "Tiger-Engine = BE 10 slots, 5000 PO, 500 weight, 1500 cost."
+frame: "Master-bot = BF 60 slots, 60 ND, 780 weight, 600 cost."
+id: 2
+move: "0"
+name: "Default Bot Medium"
+ordersListId: 2
+sensor: "Deep-Concentration = TS identifies Max 2 targets in 3 range, 70 PC, 3 slots, 70 weight, 350 cost."
+slotsUsed: "60/58"
+targetMapId: 2
+totalGold: "6750"
+totalPower: "115"
+totalWeight: "3200"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Antimatter-Cannon = WM 90 WD, 5 WR, 9 slots, 900 PC, 900 weight, 2700 cost."
+weaponSecondary: "Stone-Slingshot = WS 25 WD, 2 WR, 5 slots, 250 PC, 250 weight, 1000 cost."
+
+[[Prototype]]: Object2: 
+armor: "Starcore-Plate = FA 45 slots, 450 AD, 1000 weight, 900 cost."
+botImage: "Default Bot Image Large"
+computer: "Tesla-Computer = BC 1 slots, 45 CI, 0 weight, 450 cost."
+engine: "Nova-Engine = BE 18 slots, 9000 PO, 900 weight, 2700 cost."
+frame: "Titan-bot = BF 90 slots, 90 ND, 1170 weight, 900 cost."
+id: 3
+move: "1"
+name: "Default Bot Large"
+ordersListId: 3
+sensor: "Godly-Omnificence = TS identifies Max 5 targets in 3 range, 90 PC, 3 slots, 90 weight, 450 cost."
+slotsUsed: "90/89"
+targetMapId: 3
+totalGold: "10250"
+totalPower: "435"
+totalWeight: "4710"
+weaponBomb: "TNT-Terror = WB 200,100 WD, 4 slots, 0 PC, 200 weight, 800 cost."
+weaponMaster: "Antimatter-Cannon = WM 90 WD, 5 WR, 9 slots, 900 PC, 900 weight, 2700 cost."
+weaponSecondary: "Assassins-Rifle = WS 45 WD, 3 WR, 9 slots, 450 PC, 450 weight, 1800 cost."
+
+[[Prototype]]: Object3: 
+armor: "Paper-Plate = FA 5 slots, 50 AD, 200 weight, 100 cost."
+botImage: "Default Bot Image Small"
+computer: "Dohmer-Computer = BC 1 slots, 5 CI, 0 weight, 50 cost."
+engine: "Gnat-Engine = BE 2 slots, 1000 PO, 100 weight, 300 cost."
+frame: "Micro-bot = BF 10 slots, 10 ND, 130 weight, 100 cost."
+id: 4
+move: "0"
+name: "TEST Jay 1"
+ordersListId: 1
+sensor: "Blind-Night = TS identifies Max 1 targets in 1 range, 10 PC, 1 slots, 10 weight, 50 cost."
+slotsUsed: "0"
+targetMapId: 1
+totalGold: "0"
+totalPower: "0"
+totalWeight: "0"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Rubber-Hammer = WM 10 WD, 1 WR, 1 slot, 100 PC, 100 weight, 300 cost."
+weaponSecondary: "NONE = WS 0 WD, 0 WR, 0 slot, 0 PC, 0 weight, 0 cost."
+
+[[Prototype]]: Object4: 
+armor: "Tungston-Plate = FA 30 slots, 300 AD, 700 weight, 600 cost."
+botImage: "Default Bot Image Medium"
+computer: "Hawking-Computer = BC 1 slots, 30 CI, 0 weight, 300 cost."
+engine: "Nova-Engine = BE 18 slots, 9000 PO, 900 weight, 2700 cost."
+frame: "Monster-bot = BF 70 slots, 70 ND, 910 weight, 700 cost."
+id: 5
+move: "0"
+name: "TEST Jay 2"ordersListId: 3
+sensor: "Total-Awareness = TS identifies Max 1 targets in 3 range, 60 PC, 2 slots, 60 weight, 300 cost."
+slotsUsed: "0"
+targetMapId: 2
+totalGold: "0"
+totalPower: "0"
+totalWeight: "0"
+weaponBomb: "Concussion-Grenade = WB 150,75 WD, 3 slots, 0 PC, 150 weight, 700 cost."
+weaponMaster: "Steel-Arrows = WM 30 WD, 2 WR, 3 slots, 300 PC, 300 weight, 900 cost."
+weaponSecondary: "Curved-Crowbar = WS 15 WD, 1 WR, 3 slots, 150 PC, 150 weight, 600 cost."
+
+[[Prototype]]: Object5: 
+armor: "Tungston-Plate = FA 30 slots, 300 AD, 700 weight, 600 cost."
+botImage: "Default Bot Image Medium"
+computer: "Einstein-Computer = BC 1 slots, 40 CI, 0 weight, 400 cost."
+engine: "Elephant-Engine = BE 12 slots, 6000 PO, 600 weight, 1800 cost."
+frame: "Titan-bot = BF 90 slots, 90 ND, 1170 weight, 900 cost."
+id: 6
+move: "0"
+name: "TEST Jay 3"
+ordersListId: 2
+sensor: "Total-Awareness = TS identifies Max 1 targets in 3 range, 60 PC, 2 slots, 60 weight, 300 cost."
+slotsUsed: "90/52"
+targetMapId: 2
+totalGold: "5700"
+totalPower: "70"
+totalWeight: "3230"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Mega-Missle = WM 70 WD, 4 WR, 7 slots, 700 PC, 700 weight, 2100 cost."
+weaponSecondary: "NONE = WS 0 WD, 0 WR, 0 slot, 0 PC, 0 weight, 0 cost."
+
+
+armor: "Aluminum-Plate = FA 25 slots, 250 AD, 600 weight, 500 cost."
+botImage: "Default Bot Image Large"
+computer: "Jefferson-Computer = BC 1 slots, 20 CI, 0 weight, 200 cost."
+engine: "Juggernaut-Engine = BE 14 slots, 7000 PO, 700 weight, 2100 cost."
+frame: "Giant-bot = BF 80 slots, 80 ND, 1040 weight, 800 cost."
+id: 7
+move: "1"
+name: "TEST Jay 4"ordersListId: 3
+sensor: "Deep-Concentration = TS identifies Max 2 targets in 3 range, 70 PC, 3 slots, 70 weight, 350 cost."
+slotsUsed: "80/52"
+targetMapId: 3
+totalGold: "6050"
+totalPower: "70"
+totalWeight: "3110"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Laser-Cannon = WM 50 WD, 3 WR, 5 slots, 500 PC, 500 weight, 1500 cost."
+weaponSecondary: "Spiked-Mace = WS 20 WD, 1 WR, 4 slots, 200 PC, 200 weight, 800 cost."
+
+[[Prototype]]: Object7: 
+armor: "Iron-Plate = FA 20 slots, 200 AD, 500 weight, 400 cost."
+botImage: "Default Bot Image Small"
+computer: "Hale-Computer = BC 1 slots, 15 CI, 0 weight, 150 cost."
+engine: "RedStar-Engine = BE 16 slots, 8000 PO, 800 weight, 2400 cost."
+frame: "Monster-bot = BF 70 slots, 70 ND, 910 weight, 700 cost."
+id: 8
+move: "2"
+name: "TEST Jay 5"
+ordersListId: 1
+sensor: "Wary-Watchful = TS identifies 4 Max targets in 2 range, 50 PC, 2 slots, 50 weight, 250 cost."
+slotsUsed: "70/48"
+targetMapId: 1
+totalGold: "5950"
+totalPower: "65"
+totalWeight: "2910"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Flaming-Porjectiles = WM 40 WD, 2 WR, 4 slots, 400 PC, 400 weight, 1200 cost."
+weaponSecondary: "Stone-Slingshot = WS 25 WD, 2 WR, 5 slots, 250 PC, 250 weight, 1000 cost."
+
+[[Prototype]]: Object8: 
+armor: "Copper-Plate = FA 15 slots, 150 AD, 400 weight, 300 cost."
+botImage: "Default Bot Image Medium"
+computer: "Bennedict-Computer = BC 1 slots, 10 CI, 0 weight, 100 cost."
+engine: "Tiger-Engine = BE 10 slots, 5000 PO, 500 weight, 1500 cost."
+frame: "Master-bot = BF 60 slots, 60 ND, 780 weight, 600 cost."
+id: 9
+move: "0"
+name: "TEST Jay 6"
+ordersListId: 2
+sensor: "Abstract_Thoughts = TS identifies Max 3 targets in 1 range, 30 PC, 1 slots, 30 weight, 150 cost."
+slotsUsed: "60/42"
+targetMapId: 2
+totalGold: "6450"
+totalPower: "120"
+totalWeight: "2910"
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Antimatter-Cannon = WM 90 WD, 5 WR, 9 slots, 900 PC, 900 weight, 2700 cost."
+weaponSecondary: "Blunderbuss-Pistol = WS 30 WD, 2 WR, 6 slots, 300 PC, 300 weight, 1200 cost."
+
+
+
+armor: "Paper-Plate = FA 5 slots, 50 AD, 200 weight, 100 cost."
+botImage: "Default Bot Image Small"
+computer: "Bennedict-Computer = BC 1 slots, 10 CI, 0 weight, 100 cost."
+engine: "Horse-Engine = BE 6 slots, 3000 PO, 300 weight, 900 cost."
+frame: "Junior-bot = BF 40 slots, 40 ND, 520 weight, 400 cost."
+id: 10
+move: "0"
+name: "TEST Jay 7"
+ordersListId: 2
+sensor: "Barely-Awake = TS identifies Max 2 targets in 1 range, 20 PC, 1 slots, 20 weight, 100 cost."
+slotsUsed: "40/22"
+targetMapId: 3
+totalGold: "3400"
+totalPower: "400"
+totalWeight: "1540"
+weaponBomb: "Deadly-Dynamite = WB 250,125 WD, 5 slots, 0 PC, 250 weight, 1000 cost."
+weaponMaster: "Rubber-Hammer = WM 10 WD, 1 WR, 1 slot, 100 PC, 100 weight, 300 cost."
+weaponSecondary: "Curved-Crowbar = WS 15 WD, 1 WR, 3 slots, 150 PC, 150 weight, 600 cost."
+
+[[Prototype]]: Object10: 
+armor: "Paper-Plate = FA 5 slots, 50 AD, 200 weight, 100 cost."
+botImage: "Default Bot Image Small"
+computer: "Dohmer-Computer = BC 1 slots, 5 CI, 0 weight, 50 cost."
+engine: "Gorrila-Engine = BE 8 slots, 4000 PO, 400 weight, 1200 cost."
+frame: "Mini-bot = BF 20 slots, 20 ND, 160 weight, 200 cost."
+id: 11
+name: "Slightly bigger"ordersListId: 1
+sensor: "Blind-Night = TS identifies Max 1 targets in 1 range, 10 PC, 1 slots, 10 weight, 50 cost."
+targetMapId: 1
+weaponBomb: "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost."
+weaponMaster: "Rubber-Hammer = WM 10 WD, 1 WR, 1 slot, 100 PC, 100 weight, 300 cost.
+"weaponSecondary: "NONE = WS 0 WD, 0 WR, 0 slot, 0 PC, 0 weight, 0 cost."
+
+
+[[Prototype]]: Objectlength: 11
+[[Prototype]]: 
+Array(0)orderLists: 
+Array(8)0: 
+commands: Array(5)
+0: "Move Forward 1"
+1: "Fire Master Weapon"
+2: "Turn Right"
+3: "Move Forward 1"
+4: "Turn Left"
+length: 5
+
+[[Prototype]]: Array(0)
+id: 1
+name: "Default Orders List 5"
+[[Prototype]]: Object1: 
+commands: Array(15)
+0: "Activate Targeting Map"
+1: "If Any Enemies in Range ..."
+2: "Move toward located Enemy"
+3: "Fire Master Weapon"
+4: "Fire Seconday Weapon"
+5: "Turn Right"
+6: "Move Forward 2"
+7: "Turn Left"
+8: "Move Forward 2"
+9: "Fire Master Weapon"
+10: "If Your Armor is Below 300 ..."
+11: "Move Backward 1"
+12: "Turn Right"
+13: "Turn Right"
+14: "Move Forward 1"
+length: 15
+[[Prototype]]: Array(0)
+id: 2
+name: "Default Orders List 15"
+
+[[Prototype]]: Object2: commands: 
+Array(25)
+0: "Activate Targeting Map"
+1: "If Any Enemies in Range ..."
+2: "Move toward located Enemy"
+3: "Fire All"
+4: "Fire Master Weapon"
+5: "Fire Seconday Weapon"
+6: "Turn Right"
+7: "Move Forward 1"
+8: "If Movement Blocked by Enemy ..."
+9: "Fire Master Weapon"
+10: "Turn Left"11: "Move Forward 2"
+12: "If Movement Blocked by Ally ..."
+13: "Angle Right"
+14: "Move Forward 1"
+15: "If Your Armor is Below 500 ..."
+16: "Fire Master Weapon"
+17: "If Your Armor is Below 300 ..."
+18: "Activate Self-Destruct"
+19: "If Your Armor is Below 100 ..."
+20: "Move Backward 2"
+21: "Turn Right"
+22: "Turn Right"
+23: "If Facing Off-Map ..."
+24: "Move Forward 3"
+length: 25
+
+[[Prototype]]: Array(0)
+id: 3
+name: "Default Orders List 25"
+[[Prototype]]: Object3: commands: Array(5)
+0: "Move Forward 1"
+1: "Move Backward 3"
+2: "Activate Targeting Map"
+3: "Move toward located Enemy"
+4: "Fire All"
+length: 5
+
+[[Prototype]]: Array(0)
+id: 4
+name: "Default Orders List 5 TEST"
+
+[[Prototype]]: Object4: 
+commands: Array(8)
+0: "Move Forward 1"
+1: "Move Backward 3"
+2: "Activate Targeting Map"
+3: "Move toward located Enemy"
+4: "Fire All"
+5: "If Facing Off-Map ..."
+6: "Angle Left"
+7: "Move Forward 2"
+length: 8
+
+[[Prototype]]: Array(0)
+id: 5
+name: "Default Orders List 15 TEST"
+[[Prototype]]: Object5: 
+commands: Array(6)
+0: "Move Forward 1"
+1: "Angle Left"
+2: "Move Forward 1"
+3: "Activate Targeting Map"
+4: "If Any Enemies in Range ..."
+5: "Fire All"
+length: 6
+[[Prototype]]: Array(0)
+id: 6
+name: "TEST JAY 1"
+
+[[Prototype]]: Object6: {
+name: 'Default Orders List 5A', 
+commands: Array(5), 
+id: 7}
+7: commands: Array(9)
+0: "Move Forward 1"
+1: "Move Forward 1"
+2: "Move Forward 1"
+3: "Move Forward 1"
+4: "Move Forward 1"
+5: "Move Forward 1"
+6: "Move Forward 1"
+7: "Move Forward 1"
+8: "Move Forward 1"
+length: 9
+[[Prototype]]: Array(0)id: 
+8name: "Default Orders List 20"
