@@ -60,6 +60,8 @@ function extractComponentName(descriptionString) {
  * 
  */
 export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
+  console.log("...Function BEGIN_COMBAT End...");
+
   SHOW_COMBAT_RECORD = "TRUE";
   console.log(`BEGIN_COMBAT: Army1=${army1Id}, Army2=${army2Id}`);
 
@@ -106,6 +108,7 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
     console.log(`Combat initialized: ${battleState.battleId}`);
 
     await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+  console.log("...Function BEGIN_COMBAT End...");
 
     return { success: true, battleId: battleState.battleId, combatRecord: COMBAT_RECORD };
   } catch (error) {
@@ -121,6 +124,8 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
  * Randomly decides which army goes first.
  */
 export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
+			console.log("...Function CREATE_ALL_BOTS_IN_COMBAT_LIST Start...");
+
   const firstArmy = Math.floor(Math.random() * 2) + 1;
 
   const shuffle = (arr) => {
@@ -147,7 +152,7 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
       if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
     }
   }
-
+  console.log("...Function CREATE_ALL_BOTS_IN_COMBAT_LIST END...");
   return allBots.map((bot, index) => ({
     ...bot,
     combatBotNumber: bot.botNumber || index + 1,
@@ -185,171 +190,66 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
  * is over, passing to it the COMBAT_RECORD. 
 */ 
 export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
-  console.log("MAIN_COMBAT_LOOP called");
+		console.log("...Function MAIN COMBAT LOOP Start...");
 ////////  Run STARTING_MAP_SQUARES /////////////////
   const [GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-  console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS); //Working here.
-  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES); //Working here.
+//  console.log("GAME_MAP_BOTS:" + GAME_MAP_BOTS); //Working here.
+//  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES); //Working here.
+		console.log(" JJJJJ: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
+
   let TOO_MANY_TURNS = 0;
   let BOT_IS_DESTROYED = ['41','42','43'];
+  let CURRENT_BOT_NUMBER = 0;
 //  console.log(" BOT_IS_DESTROYED.includes(42);: " + BOT_IS_DESTROYED.includes("42"));
-//      console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
 // BOT_IS_DESTROYED.includes("42");
 //  while (TOO_MANY_TURNS <= 10){
 //	  TOO_MANY_TURNS++;
 console.log("...........TOO MANY TURNS...........");
+	for (var j = 0; j < ALL_BOTS_IN_COMBAT_LIST.length; j++){
+		console.log("..... Inside FOR .....");
+
+		console.log(" VVVVVVV: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].name) + "   " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].combatBotNumber) + "  ordersListId: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId));
+
+		if (BOT_IS_DESTROYED.includes(CURRENT_BOT_NUMBER) && TOO_MANY_TURNS <= 50)
+		  {console.log("........... IF DUAL CONDITIONS  TRUE ...........");}else{ /// not true!!!
+			console.log("..... Inside FOR .....");
+
+			console.log("........... IF DUAL CONDITIONS  FALSE ...TMT:." + TOO_MANY_TURNS);
+			TOO_MANY_TURNS++;//
+    let commands = 3;		
+//			(await db.orderLists.get(1)).commands[1]
+window.alert(".. NEXT COMMAND: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
+
+
+//    let commands = 3;
+//console.log(" ORDERS4: " + JSON.stringify(db.orderLists.get(11)));
+//console.log(" ORDERS5: " + JSON.stringify(db.orderLists.get(12)));
+//SHOW COMMANDS!!!
 //console.log(" JAY: JAY: JAY: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
 //console.log(" JAY: JAY: JAY: " + ALL_BOTS_IN_COMBAT_LIST);
-	for (var j = 0; j < ALL_BOTS_IN_COMBAT_LIST.length; j++){
+//console.log(await db.ordersLists.get(1));
+//      const order = await db.orderLists.name;//WORKS! 
 //console.log(" !!!!!!!: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j]));
-console.log(" VVVVVVV: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].name) + "   " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].combatBotNumber) + "  ordersListId: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId));
-
-    let commands = 3;
-	
-	const CURRENT_ORDERS_LIST = await db.orderLists.get(commands); //DOES NOT BREAK!!!
-	
-	
-	
-//FAILED TO INITIALIZE	const CURRENT_ORDERS_LIST = await db.orderLists.commands.get(Array);
-
-console.log(" ORDERS2: " + JSON.stringify(db.orderLists.get(commands)));
-
-
-
-
-//WORKS!      const order = await db.orderLists.name;
-
-
-
-const order = await db.orderLists.toArray()
-
-//await db.orderLists.name;
-
-
 //const order = (await db.orderLists.get(1)).commands[1]);
-console.log(" ORDERS3A: " + JSON.stringify(order));
-console.log(db.orderLists);
-
-console.log(JSON.stringify(order)));
-console.log(await db.orderLists.get(j));
-
+//console.log(" ORDERS3A: " + JSON.stringify(order));
+//console.log(db.orderLists);
+//console.log(JSON.stringify(order));
+//console.log(await db.orderLists.get(j));
+//const order = await db.orderLists.toArray();
+//console.log(" ORDERS2: " + JSON.stringify(db.orderLists.get(commands)));
 //window.alert(".. ORDERS3A: " + JSON.stringify(order)); // SHOW ALL!!!!!
-//window.alert(".. ORDERS3A: " + (await db.orderLists.get(1)).commands[1]); //SHOW COMMANDS!!!
 
-//My current tab is: 
-
-//http://localhost/combat  
-
-//When I hit F12, I think it responded with this:
-//[vite] hot updated: /src/screens/BotWorkshopScreen.tsx
-//client:906 
-//[vite] hot updated: /src/screens/CombatScreen.tsx
-
-//Where do I run the command:
-//(await db.orderLists.get(1)).commands[1]
-
-//When I click 'TOP', my options are:
-
-//DevTools Performance Metrics
-//localhost:5173
-
-//and 
-
-//Guardio Protection for Edge Extension
-
-//I have tried both and typed 'db' <enter> on the DevTool cmd line. 
-
-//This is what I got:
-//VM6284:1 Uncaught ReferenceError: db is not defined
-//    at <anonymous>:1:1
-//(anonymous)	@	VM6284:1
-
-
-
-//console.log(" ORDERS3A: " + JSON.stringify(command));
-//console.log(" ORDERS3A: " + JSON.stringify(index));
-//console.log(" ORDERS3A: " + JSON.stringify(cmd));
-
-
-
-//console.log(await db.ordersLists.get(1));
-
-//console.log(await db.ordersLists.get(1));
-
-
-
-
-
-
-
-
-
-
-
-
-//console.log(" ORDERS3: " + JSON.stringify(db.orderLists.commands.get.id[2]));
-
-console.log(" ORDERS4: " + JSON.stringify(db.orderLists.get(11)));
-
-console.log(" ORDERS5: " + JSON.stringify(db.orderLists.get(12)));
-
-console.log(" ORDERS6: " + JSON.stringify(db.orderLists.get(100)));
-
-/*
-
-	"Default Orders List 5 TEST"	4	
-{name: 'Default Orders List 5 TEST', commands: Array(5), id: 4}
-commands
-: 
-(5) ['Move Forward 1', 'Move Backward 3', 'Activate Targeting Map', 'Move toward located Enemy', 'Fire All']
-id
-: 
-4
-name
-: 
-"Default Orders List 5 TEST"
-5	"Default Orders List 5A"	7	
-{name: 'Default Orders List 5A', commands: Array(5), id: 7}
-6	"TEST JAY 1"	6	
-{name: 'TEST JAY 1', commands: Array(6), id: 6}
-
-
-
- ORDERS2: {"_listeners":[],"_lib":false,"_PSD":{"id":"global","global":true,"ref":14,"unhandleds":[],"pgp":false,"env":{"PromiseProp":{"writable":true,"enumerable":false,"configurable":true}}},"_state":null,"_value":null,"_consoleTask":{}}
-
-*/
-
-
+		}//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
 	
-	
-//BREAKS CODE console.log(" ORDERS1: " + JSON.stringify(db.orderLists.get(db.orderLists.get(name)));
-
-	
-	
-//  }//while TOO_MANY_TURNS <= 10.
 
 
-//	  for (let CURRENT_BOT in JSON.stringify(ALL_BOTS_IN_COMBAT_LIST)){
-//			  TOO_MANY_TURNS++;
-//console.log(" CURRENT_BOT: " + JSON.stringify(CURRENT_BOT));
-//	  }//for CURRENT_BOT in ALL_BOTS_IN_COMBAT_LIST.
-
-//console.log(text);
-//		  if (BOT_IS_DESTROYED.includes(CURRENT_BOT_NUMBER) && TOO_MANY_TURNS <= 50){
 
 //window.alert(" CURRENT_BOT: " + CURRENT_BOT);
 //			Run function EXECUTE_ORDERS_LIST.
 //	 		Run function REMOVE_DESTROYED_BOTS.			  
-//		  }//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
 
-
-
-
-
-
-window.alert(".........END OF MAIN COMBAT LOOP.........");
-
+		console.log("...Function MAIN COMBAT LOOP End...");
   return { success: true };
 }
 
@@ -366,9 +266,7 @@ window.alert(".........END OF MAIN COMBAT LOOP.........");
  * object GAME_MAP_BOTS.
  */
 export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
-  console.log("STARTING_MAP_SQUARES called");
-
-
+    console.log("...Function STARTING_MAP_SQUARES Start...");
 ///////////////////////////////////////////////////
 ///////////// Creates a string ////////////////////
 ///////////////////////////////////////////////////
@@ -447,7 +345,8 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
     console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
 //	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
 //    console.log("COMBAT_RECORD3: ", JSON.stringify(COMBAT_RECORD));
-	
+
+    console.log("...Function STARTING_MAP_SQUARES End...");	
     return [GAME_MAP_BOTS, GAME_MAP_SQUARES];
   } catch (error) {
     console.error("STARTING_MAP_SQUARES error:", error);
@@ -495,7 +394,7 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
  */
 
 export async function EXECUTE_ORDERS_LIST(recordOrdersList, allBotsInCombatList) {
-  console.log("EXECUTE_ORDERS_LIST called");
+    console.log("...Function EXECUTE_ORDERS_LIST Start...");
 
   try {
     let CURRENT_IS_CONDITIONAL = "FALSE";
@@ -545,6 +444,7 @@ export async function EXECUTE_ORDERS_LIST(recordOrdersList, allBotsInCombatList)
     }
 
     console.log(`EXECUTE_ORDERS_LIST complete. Actions: ${ACTIONS_COUNT_TEMP}`);
+	    console.log("...Function EXECUTE_ORDERS_LIST End...");
     return { success: true };
   } catch (error) {
     console.error("EXECUTE_ORDERS_LIST error:", error);
