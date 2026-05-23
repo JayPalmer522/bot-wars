@@ -383,27 +383,37 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
  */
 
 export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT) {
-	
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
- console.log(".. TEST COMMAND1: " + (await db.orderLists.get(1)).commands[1]);
- console.log(".. TEST COMMAND2: " + (await db.orderLists.get(2)).commands[1]);
- console.log(".. TEST COMMAND3: " + (await db.orderLists.get(3)).commands[1]);
- console.log(".. TEST COMMAND4: " + (await db.orderLists.get(4)).commands[1]);
- console.log(".. TEST COMMAND5: " + (await db.orderLists.get(5)).commands[1]);
- console.log(".. TEST COMMAND6A: " + (await db.orderLists.get(6)).commands[0]);
- console.log(".. TEST COMMAND6B: " + (await db.orderLists.get(6)).commands[1]);
- console.log(".. TEST COMMAND6C: " + (await db.orderLists.get(6)).commands[2]);
- console.log(".. TEST COMMAND6D: " + (await db.orderLists.get(6)).commands[3]);
-console.log(".. TEST COMMAND6name: " + (await db.orderLists.get(6)).name);
-console.log(".. TEST COMMAND6id: " + (await db.orderLists.get(6)).id);
-console.log(".. TEST COMMAND6length1: " + (await db.orderLists.get(5)).commands[1].length);//.. TEST COMMAND6length1: 10
-console.log(".. TEST COMMAND6length2: " + (await db.orderLists.get(4)).commands[2].length);//.. TEST COMMAND6length2: 14
-console.log(".. TEST COMMAND6length3: " + (await db.orderLists.get(3)).commands[3].length);//.. TEST COMMAND6length3: 22
-console.log(".. TEST COMMAND6length4*1: " + (await db.orderLists.get(1)).commands.length);
-console.log(".. TEST COMMAND6length4*2: " + (await db.orderLists.get(2)).commands.length);
-console.log(".. TEST COMMAND6length4*3: " + (await db.orderLists.get(3)).commands.length);
-console.log(".. TEST COMMAND6length4*4: " + (await db.orderLists.get(4)).commands.length);
-console.log(".. TEST COMMAND6length4*5: " + (await db.orderLists.get(5)).commands.length);
+  const BotID = (await db.orderLists.get(1)).id;
+//  console.log(" BotID: " + BotID);
+  const TotalOfCommands = (await db.orderLists.get(BotID)).commands.length;
+//  console.log("TotalOfCommands: " + TotalOfCommands);
+	
+		for (var j = 0; j < TotalOfCommands; j++){
+ console.log("*BotID: " + BotID + " TotalOfCommands: " + TotalOfCommands);
+ console.log(".. TEST COMMAND1: " + (await db.orderLists.get(BotID)).commands[j]);
+ 			
+		}
+
+// console.log(".. TEST COMMAND1: " + (await db.orderLists.get(1)).commands[1]);
+// console.log(".. TEST COMMAND2: " + (await db.orderLists.get(2)).commands[1]);
+// console.log(".. TEST COMMAND3: " + (await db.orderLists.get(3)).commands[1]);
+// console.log(".. TEST COMMAND4: " + (await db.orderLists.get(4)).commands[1]);
+// console.log(".. TEST COMMAND5: " + (await db.orderLists.get(5)).commands[1]);
+// console.log(".. TEST COMMAND6A: " + (await db.orderLists.get(6)).commands[0]);
+// console.log(".. TEST COMMAND6B: " + (await db.orderLists.get(6)).commands[1]);
+// console.log(".. TEST COMMAND6C: " + (await db.orderLists.get(6)).commands[2]);
+// console.log(".. TEST COMMAND6D: " + (await db.orderLists.get(6)).commands[3]);
+//console.log(".. TEST COMMAND6name: " + (await db.orderLists.get(6)).name);
+//console.log(".. TEST COMMAND6id: " + (await db.orderLists.get(6)).id);
+//console.log(".. TEST COMMAND6length1: " + (await db.orderLists.get(5)).commands[1].length);//.. TEST COMMAND6length1: 10
+//console.log(".. TEST COMMAND6length2: " + (await db.orderLists.get(4)).commands[2].length);//.. TEST COMMAND6length2: 14
+//console.log(".. TEST COMMAND6length3: " + (await db.orderLists.get(3)).commands[3].length);//.. TEST COMMAND6length3: 22
+//console.log(".. TEST COMMAND6length4*1: " + (await db.orderLists.get(1)).commands.length);
+//console.log(".. TEST COMMAND6length4*2: " + (await db.orderLists.get(2)).commands.length);
+//console.log(".. TEST COMMAND6length4*3: " + (await db.orderLists.get(3)).commands.length);
+//console.log(".. TEST COMMAND6length4*4: " + (await db.orderLists.get(4)).commands.length);
+//console.log(".. TEST COMMAND6length4*5: " + (await db.orderLists.get(5)).commands.length);
 
 //.. TEST COMMAND6length4: 27
 //console.log(".. TEST COMMAND6keys(): " + (await Object.keys((db.orderLists.get(6))));
