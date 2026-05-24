@@ -234,12 +234,12 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 //			(await db.orderLists.get(1)).commands[1]
 console.log(".. TRUE COMMAND: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
 
-
+//////////// Call EXECUTE_ORDERS_LIST ////////////////////
 			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT)
 		}//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
 //	 		Run function REMOVE_DESTROYED_BOTS.			  
-		console.log("...Function MAIN COMBAT LOOP End...");
+console.log("...Function MAIN COMBAT LOOP End...");
   return { success: true };
 }
 
@@ -385,15 +385,24 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
 export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT) {
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
   const BotID = (await db.orderLists.get(1)).id;
-//  console.log(" BotID: " + BotID);
+  console.log(" BotID: " + BotID);
   const TotalOfCommands = (await db.orderLists.get(BotID)).commands.length;
-//  console.log("TotalOfCommands: " + TotalOfCommands);
+  console.log("TotalOfCommands: " + TotalOfCommands);
 	
 		for (var j = 0; j < TotalOfCommands; j++){
- console.log("*BotID: " + BotID + " TotalOfCommands: " + TotalOfCommands);
- console.log(".. TEST COMMAND1: " + (await db.orderLists.get(BotID)).commands[j]);
- 			
+
+ console.log("*BotID: " + BotID + " TotalOfCommands: " + TotalOfCommands + " j: " + j);
+ console.log("===>>>: " + (await db.orderLists.get(BotID)).commands[j]);
+// 	const CURRENT_BOT_COMMAND =  await db.orderLists.get(BotID).commands[j];
+//	console.log(" CURRENT_BOT_COMMAND: " + CURRENT_BOT_COMMAND); 
 		}
+
+
+console.log("...Function EXECUTE_ORDERS_LIST End...");
+ 
+ return [GAME_MAP_BOTS];
+}
+
 
 // console.log(".. TEST COMMAND1: " + (await db.orderLists.get(1)).commands[1]);
 // console.log(".. TEST COMMAND2: " + (await db.orderLists.get(2)).commands[1]);
@@ -414,72 +423,45 @@ export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS
 //console.log(".. TEST COMMAND6length4*3: " + (await db.orderLists.get(3)).commands.length);
 //console.log(".. TEST COMMAND6length4*4: " + (await db.orderLists.get(4)).commands.length);
 //console.log(".. TEST COMMAND6length4*5: " + (await db.orderLists.get(5)).commands.length);
-
 //.. TEST COMMAND6length4: 27
 //console.log(".. TEST COMMAND6keys(): " + (await Object.keys((db.orderLists.get(6))));
-
 //let MyTest1 = 0; 
-let ORid = 0;
-ORid = JSON.stringify(CURRENT_BOT.ordersListId);
-
-console.log(" ORid: " + ORid);
-
-const MyTest1 = "(await db.orderLists.get(" + ORid + ")).commands[1];";
-
-console.log(" MyTest1: " + MyTest1); 
-let Joe = eval(MyTest1);
-
-console.log(" MyTest1: " + MyTest1); 
-console.log(" Joe: " + Joe); 
-
-
-
+//let ORid = 0;
+//ORid = JSON.stringify(CURRENT_BOT.ordersListId);
+//console.log(" ORid: " + ORid);
+//const MyTest1 = "(await db.orderLists.get(" + ORid + ")).commands[1];";
+//console.log(" MyTest1: " + MyTest1); 
+//let Joe = eval(MyTest1);
+//console.log(" MyTest1: " + MyTest1); 
+//console.log(" Joe: " + Joe); 
 //let CURRENT_BOT_COMMAND = (MyTest1); 
-
-console.log(" CURRENT_BOT_COMMAND: " + CURRENT_BOT_COMMAND); 
-
 // Define your commands in an object
 //const commands = {
 //  "greet": () => console.log(CURRENT_BOT_COMMAND),
 //  "add": (a, b) => console.log(a + b)
 //};
-
 // Execute using the string
 //const inputString = "greet";
-
 //if (commands[CURRENT_BOT_COMMAND]) {
 //  commands[CURRENT_BOT_COMMAND](); // Calls the mapped function  
 //}
 //console.log("commands: " + commands); //GOOD!!!  WORKS!!!!
-
 //const commandString = CURRENT_BOT_COMMAND;
-
 // Create a function from the string and execute it
 //const runCommand = new Function(commandString);
 //runCommand();
-
+//			if (j = 0){j = "0"};
+//			if (BotID = 0){BotID  = "0"};
 //console.log("runCommand1: " + JSON.stringify(runCommand));
-
 //window.alert("runCommand2: " + JSON.stringify(runCommand));
-
 //if (ORid = "1") {MyTest1 = (await db.orderLists.get(1)).commands[1];}
 //if (ORid = "2") {MyTest1 = (await db.orderLists.get(2)).commands[1];}
 //if (ORid = "3") {MyTest1 = (await db.orderLists.get(3)).commands[1];}
-
-
-
 //if (ORid = 1) {MyTest1 = (await db.orderLists.get(1)).commands[1];}
 //if (ORid = 2) {MyTest1 = (await db.orderLists.get(2)).commands[1];}
 //if (ORid = 3) {MyTest1 = (await db.orderLists.get(3)).commands[1];}
-
 //  console.log("... 55: " + MyTest1); //GOOD!!!  WORKS!!!!
  
-
- console.log("...Function EXECUTE_ORDERS_LIST End...");
- 
- return [GAME_MAP_BOTS];
-}
-
 
 
 
