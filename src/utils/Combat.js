@@ -226,13 +226,9 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 		  {
 //			  console.log("........... IF DUAL CONDITIONS  TRUE ...........");
 	  }else{ /// not true!!!
-//			console.log("..... Inside FOR .....");
-
-//			console.log("........... IF DUAL CONDITIONS  FALSE ...TMT:." + TOO_MANY_TURNS);
 			TOO_MANY_TURNS++;//
 			let commands = 3;//STUPID, but leave or it breaks!	
-//			(await db.orderLists.get(1)).commands[1]
-console.log(".. TRUE COMMAND: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
+console.log(".XXX: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
 
 //////////// Call EXECUTE_ORDERS_LIST ////////////////////
 			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT)
@@ -309,29 +305,7 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
         GAME_MAP_SQUARES.push(square);
       }
     }
-	console.log(" BOT_SQUARES(botIndex): " + botIndex);
-	console.log(" BOT_SQUARES(botIndex): " + JSON.stringify(botIndex));
-/*
-"Place Bot 1 facing West on ANI_MAP_SPACE 1.",
-"Place Bot 2 facing East on ANI_MAP_SPACE 9.",
-"Place Bot 3 facing West on ANI_MAP_SPACE 2.",
-"Place Bot 4 facing East on ANI_MAP_SPACE 10.",
-"Place Bot 5 facing West on ANI_MAP_SPACE 11.",
-"Place Bot 6 facing East on ANI_MAP_SPACE 19.",
-"Place Bot 7 facing West on ANI_MAP_SPACE 12.",
-"Place Bot 8 facing East on ANI_MAP_SPACE 20.",
-"Place Bot 9 facing West on ANI_MAP_SPACE 21.",
-"Place Bot 10 facing East on ANI_MAP_SPACE 29.",
-"Place Bot 11 facing West on ANI_MAP_SPACE 22.",
-"Place Bot 12 facing East on ANI_MAP_SPACE 30.",
-"Place Bot 13 facing West on ANI_MAP_SPACE 31.",
-"Place Bot 14 facing East on ANI_MAP_SPACE 39.",
-"Place Bot 15 facing West on ANI_MAP_SPACE 32.",
-"Place Bot 16 facing East on ANI_MAP_SPACE 40.",
-"Place Bot 17 facing West on ANI_MAP_SPACE 41.",
-*/
 
-//     window.alert("***STRING: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
     console.log("STARTING_MAP_SQUARES complete:", JSON.stringify(GAME_MAP_BOTS));
 //	 window.alert("GAME_MAP_BOTS: " + JSON.stringify(GAME_MAP_BOTS) + "GAME_MAP_SQUARE: " + JSON.stringify(GAME_MAP_SQUARES));
 //    console.log("COMBAT_RECORD3: ", JSON.stringify(COMBAT_RECORD));
@@ -384,26 +358,95 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
 
 export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT) {
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
-  const BotID = (await db.orderLists.get(1)).id;
-  console.log(" BotID: " + BotID);
+ //console.log("xxx" + JSON.stringify(CURRENT_BOT));
+ //const strParseReturn = "   ";
+
+ const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+ const startParse = "combatBotNumber";
+ const endParse = "EndOfData";
+
+ const strParseReturn = ParseString(strParse, startParse, endParse);
+ 
+  console.log(".XX.BACK IN EXECUTE .... ");
+  console.log(strParseReturn);
+ let strParseReturn2 = strParseReturn.slice(2);
+ console.log(strParseReturn2);
+ 
+const BotID = strParseReturn2.slice(0, -1); 
+ console.log("----" + BotID + "----");
+
+
+//const BotID = (await db.orderLists.get(1)).id;
+
+
+//  console.log(".XX.strParse: " + strParse);
+ 
+//  strParse = JSON.stringify(strParse) + "EndOfData";
+//  startParse = ":";
+//  endParse = "EndOfData";
+// [strParse] = ParseString(strParse, startParse, endParse);
+//  console.log(".zz.strParse: " + JSON.stringify(strParse));
+ 
+ 
+//  const BotID = (await db.orderLists.get(1)).id;
+  
   const TotalOfCommands = (await db.orderLists.get(BotID)).commands.length;
-  console.log("TotalOfCommands: " + TotalOfCommands);
-	
-		for (var j = 0; j < TotalOfCommands; j++){
 
- console.log("*BotID: " + BotID + " TotalOfCommands: " + TotalOfCommands + " j: " + j);
- console.log("===>>>: " + (await db.orderLists.get(BotID)).commands[j]);
-// 	const CURRENT_BOT_COMMAND =  await db.orderLists.get(BotID).commands[j];
-//	console.log(" CURRENT_BOT_COMMAND: " + CURRENT_BOT_COMMAND); 
-		}
+  console.log("..BotID: " + BotID + " ..TotalOfCommands: " + TotalOfCommands);
 
+
+		for (var pcount = 0; pcount < TotalOfCommands; pcount++){
+
+ console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands);
+
+
+// console.log(await db.orderLists.get(BotID).commands[p]);
+
+//const Kelpies = (await db.orderLists.get(BotID)).commands[p];
+//console.log("===>>>: " + Kelpies);
+
+//[pcount] = CURRENT_MOVE_BOT3(Kelpies, pcount); 
+  
+//[GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD, Kelpies);		
+
+
+}//for (var p ....
+
+//[pcount] = CURRENT_MOVE_BOT3(Kelpies, pcount); 
 
 console.log("...Function EXECUTE_ORDERS_LIST End...");
  
  return [GAME_MAP_BOTS];
 }
 
+////////////////////////////////////////////////////////////////
+function ParseString(strParse, startParse, endParse) {
+ console.log("...Function ParseString Start...");
 
+//  const strParseReturn = "";
+  
+  console.log("...strParse: " + strParse + " ...startParse: " + startParse + " ...endParse: " + endParse);
+  const startIndexParse = strParse.indexOf(startParse);
+  if (startIndexParse === -1) return null;
+
+  const endIndexParse = strParse.indexOf(endParse, startIndexParse + startParse.length);
+  if (endIndexParse === -1) return null;
+  console.log("  - - - - " + strParse.substring(startIndexParse + startParse.length, endIndexParse));
+
+  return strParse.substring(startIndexParse + startParse.length, endIndexParse);
+}
+
+/*
+function foo(name) {
+  return new Promise((resolve) => {
+    console.log(name, "start");
+    resolve(console.log(name, "middle"));
+  }).then(() => {
+    console.log(name, "end");
+  });
+}
+
+*/
 // console.log(".. TEST COMMAND1: " + (await db.orderLists.get(1)).commands[1]);
 // console.log(".. TEST COMMAND2: " + (await db.orderLists.get(2)).commands[1]);
 // console.log(".. TEST COMMAND3: " + (await db.orderLists.get(3)).commands[1]);
@@ -474,8 +517,20 @@ console.log("...Function EXECUTE_ORDERS_LIST End...");
 // ============================================================================
 
 export async function CURRENT_MOVE_BOT1()       { console.log("CURRENT_MOVE_BOT1"); }
-export async function CURRENT_MOVE_BOT2()       { console.log("CURRENT_MOVE_BOT2"); }
-export async function CURRENT_MOVE_BOT3()       { console.log("CURRENT_MOVE_BOT3"); }
+export async function CURRENT_MOVE_BOT2()       { console.log("CURRENT_MOVE_BOT2");
+		for (var m = 0; m < 1000; m++){
+const TrapMe = m +100;
+		}
+ }
+export async function CURRENT_MOVE_BOT3(Kelpies, pcount)       { 
+
+console.log("...Function CURRENT_MOVE_BOT3 Start...");
+//		for (var n = 0; n < 100; n++){
+//const TrapMe = n +100;
+//		}
+		
+ return [pcount];
+ }
 export async function CURRENT_MOVE_BOT4()       { console.log("CURRENT_MOVE_BOT4"); }
 export async function CURRENT_MOVE_BOT5()       { console.log("CURRENT_MOVE_BOT5"); }
 export async function CURRENT_MOVE_BOTMAX()     { console.log("CURRENT_MOVE_BOTMAX"); }
