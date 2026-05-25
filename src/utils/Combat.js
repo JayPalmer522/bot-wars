@@ -358,8 +358,6 @@ let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30
 
 export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT) {
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
- //console.log("xxx" + JSON.stringify(CURRENT_BOT));
- //const strParseReturn = "   ";
 
  const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
  const startParse = "combatBotNumber";
@@ -367,27 +365,12 @@ export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS
 
  const strParseReturn = ParseString(strParse, startParse, endParse);
  
-  console.log(".XX.BACK IN EXECUTE .... ");
-  console.log(strParseReturn);
  let strParseReturn2 = strParseReturn.slice(2);
- console.log(strParseReturn2);
  
 const BotID = strParseReturn2.slice(0, -1); 
  console.log("----" + BotID + "----");
 
 
-//const BotID = (await db.orderLists.get(1)).id;
-
-
-//  console.log(".XX.strParse: " + strParse);
- 
-//  strParse = JSON.stringify(strParse) + "EndOfData";
-//  startParse = ":";
-//  endParse = "EndOfData";
-// [strParse] = ParseString(strParse, startParse, endParse);
-//  console.log(".zz.strParse: " + JSON.stringify(strParse));
- 
- 
 //  const BotID = (await db.orderLists.get(1)).id;
   
   const TotalOfCommands = (await db.orderLists.get(BotID)).commands.length;
@@ -409,10 +392,7 @@ const BotID = strParseReturn2.slice(0, -1);
   
 //[GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD, Kelpies);		
 
-
 }//for (var p ....
-
-//[pcount] = CURRENT_MOVE_BOT3(Kelpies, pcount); 
 
 console.log("...Function EXECUTE_ORDERS_LIST End...");
  
@@ -423,89 +403,16 @@ console.log("...Function EXECUTE_ORDERS_LIST End...");
 function ParseString(strParse, startParse, endParse) {
  console.log("...Function ParseString Start...");
 
-//  const strParseReturn = "";
-  
-  console.log("...strParse: " + strParse + " ...startParse: " + startParse + " ...endParse: " + endParse);
+// console.log("...strParse: " + strParse + " ...startParse: " + startParse + " ...endParse: " + endParse);
   const startIndexParse = strParse.indexOf(startParse);
   if (startIndexParse === -1) return null;
 
   const endIndexParse = strParse.indexOf(endParse, startIndexParse + startParse.length);
   if (endIndexParse === -1) return null;
-  console.log("  - - - - " + strParse.substring(startIndexParse + startParse.length, endIndexParse));
+//  console.log("  - - - - " + strParse.substring(startIndexParse + startParse.length, endIndexParse));
 
   return strParse.substring(startIndexParse + startParse.length, endIndexParse);
 }
-
-/*
-function foo(name) {
-  return new Promise((resolve) => {
-    console.log(name, "start");
-    resolve(console.log(name, "middle"));
-  }).then(() => {
-    console.log(name, "end");
-  });
-}
-
-*/
-// console.log(".. TEST COMMAND1: " + (await db.orderLists.get(1)).commands[1]);
-// console.log(".. TEST COMMAND2: " + (await db.orderLists.get(2)).commands[1]);
-// console.log(".. TEST COMMAND3: " + (await db.orderLists.get(3)).commands[1]);
-// console.log(".. TEST COMMAND4: " + (await db.orderLists.get(4)).commands[1]);
-// console.log(".. TEST COMMAND5: " + (await db.orderLists.get(5)).commands[1]);
-// console.log(".. TEST COMMAND6A: " + (await db.orderLists.get(6)).commands[0]);
-// console.log(".. TEST COMMAND6B: " + (await db.orderLists.get(6)).commands[1]);
-// console.log(".. TEST COMMAND6C: " + (await db.orderLists.get(6)).commands[2]);
-// console.log(".. TEST COMMAND6D: " + (await db.orderLists.get(6)).commands[3]);
-//console.log(".. TEST COMMAND6name: " + (await db.orderLists.get(6)).name);
-//console.log(".. TEST COMMAND6id: " + (await db.orderLists.get(6)).id);
-//console.log(".. TEST COMMAND6length1: " + (await db.orderLists.get(5)).commands[1].length);//.. TEST COMMAND6length1: 10
-//console.log(".. TEST COMMAND6length2: " + (await db.orderLists.get(4)).commands[2].length);//.. TEST COMMAND6length2: 14
-//console.log(".. TEST COMMAND6length3: " + (await db.orderLists.get(3)).commands[3].length);//.. TEST COMMAND6length3: 22
-//console.log(".. TEST COMMAND6length4*1: " + (await db.orderLists.get(1)).commands.length);
-//console.log(".. TEST COMMAND6length4*2: " + (await db.orderLists.get(2)).commands.length);
-//console.log(".. TEST COMMAND6length4*3: " + (await db.orderLists.get(3)).commands.length);
-//console.log(".. TEST COMMAND6length4*4: " + (await db.orderLists.get(4)).commands.length);
-//console.log(".. TEST COMMAND6length4*5: " + (await db.orderLists.get(5)).commands.length);
-//.. TEST COMMAND6length4: 27
-//console.log(".. TEST COMMAND6keys(): " + (await Object.keys((db.orderLists.get(6))));
-//let MyTest1 = 0; 
-//let ORid = 0;
-//ORid = JSON.stringify(CURRENT_BOT.ordersListId);
-//console.log(" ORid: " + ORid);
-//const MyTest1 = "(await db.orderLists.get(" + ORid + ")).commands[1];";
-//console.log(" MyTest1: " + MyTest1); 
-//let Joe = eval(MyTest1);
-//console.log(" MyTest1: " + MyTest1); 
-//console.log(" Joe: " + Joe); 
-//let CURRENT_BOT_COMMAND = (MyTest1); 
-// Define your commands in an object
-//const commands = {
-//  "greet": () => console.log(CURRENT_BOT_COMMAND),
-//  "add": (a, b) => console.log(a + b)
-//};
-// Execute using the string
-//const inputString = "greet";
-//if (commands[CURRENT_BOT_COMMAND]) {
-//  commands[CURRENT_BOT_COMMAND](); // Calls the mapped function  
-//}
-//console.log("commands: " + commands); //GOOD!!!  WORKS!!!!
-//const commandString = CURRENT_BOT_COMMAND;
-// Create a function from the string and execute it
-//const runCommand = new Function(commandString);
-//runCommand();
-//			if (j = 0){j = "0"};
-//			if (BotID = 0){BotID  = "0"};
-//console.log("runCommand1: " + JSON.stringify(runCommand));
-//window.alert("runCommand2: " + JSON.stringify(runCommand));
-//if (ORid = "1") {MyTest1 = (await db.orderLists.get(1)).commands[1];}
-//if (ORid = "2") {MyTest1 = (await db.orderLists.get(2)).commands[1];}
-//if (ORid = "3") {MyTest1 = (await db.orderLists.get(3)).commands[1];}
-//if (ORid = 1) {MyTest1 = (await db.orderLists.get(1)).commands[1];}
-//if (ORid = 2) {MyTest1 = (await db.orderLists.get(2)).commands[1];}
-//if (ORid = 3) {MyTest1 = (await db.orderLists.get(3)).commands[1];}
-//  console.log("... 55: " + MyTest1); //GOOD!!!  WORKS!!!!
- 
-
 
 
 
