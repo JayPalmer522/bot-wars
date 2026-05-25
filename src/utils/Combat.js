@@ -362,25 +362,46 @@ export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS
  const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
  const startParse = "combatBotNumber";
  const endParse = "EndOfData";
-
  const strParseReturn = ParseString(strParse, startParse, endParse);
- 
  let strParseReturn2 = strParseReturn.slice(2);
- 
-const BotID = strParseReturn2.slice(0, -1); 
+ const BotID = strParseReturn2.slice(0, -1); 
  console.log("----" + BotID + "----");
+ 
+const TotalOfCommands = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands.length;
 
 
-//  const BotID = (await db.orderLists.get(1)).id;
-  
-  const TotalOfCommands = (await db.orderLists.get(BotID)).commands.length;
 
-  console.log("..BotID: " + BotID + " ..TotalOfCommands: " + TotalOfCommands);
+console.log(".YYY: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[1].ordersListId)).commands[1]);
 
+
+
+console.log(".AAA: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands.length);
+
+
+//console.log(".AAA: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[1].ordersListId)).commands.length);
 
 		for (var pcount = 0; pcount < TotalOfCommands; pcount++){
 
- console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands);
+ 	let MyCount = JSON.stringify(pcount);
+	
+console.log(".ZZZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]);
+
+ console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands + " MyCount: " + MyCount);
+	
+
+
+}//for (var p ....
+
+// const TotalOfCommands = (await db.orderLists.get(1)).commands.length;
+// console.log(" ..TotalOfCommands: " + TotalOfCommands);
+
+// console.log(await db.orderLists.get(JSON.stringify(BotID)).commands.length);
+
+// const TotalOfCommands = (await db.orderLists.get(JSON.stringify(BotID))).commands.length;
+// console.log(" ..TotalOfCommands: " + TotalOfCommands);
+
+
+// console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands);
 
 
 // console.log(await db.orderLists.get(BotID).commands[p]);
@@ -391,8 +412,6 @@ const BotID = strParseReturn2.slice(0, -1);
 //[pcount] = CURRENT_MOVE_BOT3(Kelpies, pcount); 
   
 //[GAME_MAP_BOTS, GAME_MAP_SQUARES] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD, Kelpies);		
-
-}//for (var p ....
 
 console.log("...Function EXECUTE_ORDERS_LIST End...");
  
@@ -415,8 +434,10 @@ function ParseString(strParse, startParse, endParse) {
 }
 
 
-
-
+//////////////// STRIP A CHARACTER ///////////////////////
+//const original = "banana";
+//const stripped = original.replaceAll("a", ""); 
+//console.log(stripped); // "bnn"
 
 
 // ============================================================================
