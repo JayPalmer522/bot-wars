@@ -383,8 +383,18 @@ console.log(".AAA: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].o
 		for (var pcount = 0; pcount < TotalOfCommands; pcount++){
 
  	let MyCount = JSON.stringify(pcount);
-	
-console.log(".ZZZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]);
+
+const EXECUTE_CURRENT_COMMAND = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]; 
+
+console.log(".EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
+
+
+
+//console.log(".ZZZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]);
+
+// (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[1].ordersListId)).commands[1]);
+
+
 
  console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands + " MyCount: " + MyCount);
 	
