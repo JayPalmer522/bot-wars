@@ -402,58 +402,113 @@ console.log(".EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
 		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Fire Seconday Weapon"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Seconday Weapon");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Seconday Weapon");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
 
 	if (EXECUTE_CURRENT_COMMAND == "If Any Enemies in Range ..."){
-		console.log("Call EXECUTE_CURRENT_COMMAND = If Any Enemies in Range ...");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = If Any Enemies in Range ...");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Activate Targeting Map"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Activate Targeting Map");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Activate Targeting Map");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_TOWARD_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 1"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 1");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT1(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+
 		let myReturnValue = CURRENT_MOVE_BOT1(myReturnValue);
 		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 2"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 2");
 		let myReturnValue = CURRENT_MOVE_BOT2(myReturnValue);
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT2(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
 		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 3"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 3");
-		let myReturnValue = CURRENT_MOVE_BOT3(myReturnValue);		
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT3(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+//		let myReturnValue = CURRENT_MOVE_BOT3(myReturnValue);		
 		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 4"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 4");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 4");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT4(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 5"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 5");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 5");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT5(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Turn Right"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
 
 	if (EXECUTE_CURRENT_COMMAND == "If Your Armor is Below 300 ..."){
-		console.log("Call EXECUTE_CURRENT_COMMAND = If Your Armor is Below 300 ...");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = If Your Armor is Below 300 ...");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Backward 1"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 1");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 1");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK1(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Backward 2"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 2");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 2");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK2(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Backward 3"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 3");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 3");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK3(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = MOVE_TOWARD_LOCATED_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
+
 
 
 }//for (var p ....
@@ -559,6 +614,10 @@ export async function CURRENT_ACTIVATE_SELF_DESTRUCT(myReturnValue) { console.lo
 return [myReturnValue];}
 export async function IDENTIFY_ANY_ENEMIES(myReturnValue)        { console.log("Start Function IDENTIFY_ANY_ENEMIES"); 
 return [myReturnValue];}
+
+export async function MOVE_TOWARD_LOCATED_ENEMY(myReturnValue)        { console.log("Start Function MOVE_TOWARD_LOCATED_ENEMY"); 
+return [myReturnValue];}
+
 
 export async function CURRENT_ARMOR_WEAK(threshold) {
   console.log(`CURRENT_ARMOR_WEAK: threshold=${threshold}`);
