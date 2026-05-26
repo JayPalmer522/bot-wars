@@ -395,7 +395,11 @@ console.log(".EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
  console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands + " MyCount: " + MyCount);
 	
 	if (EXECUTE_CURRENT_COMMAND == "Fire Master Weapon"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");
+		////////  Run Fire Master Weapon /////////////////
+		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		
+		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Fire Seconday Weapon"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Seconday Weapon");}
