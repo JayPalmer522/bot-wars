@@ -395,10 +395,62 @@ console.log(".EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
  console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands + " MyCount: " + MyCount);
 	
 	if (EXECUTE_CURRENT_COMMAND == "Fire Master Weapon"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");
-		
-	
-	}
+		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Fire Seconday Weapon"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Seconday Weapon");}
+
+	if (EXECUTE_CURRENT_COMMAND == "If Any Enemies in Range ..."){
+		console.log("Call EXECUTE_CURRENT_COMMAND = If Any Enemies in Range ...");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Activate Targeting Map"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Activate Targeting Map");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 1"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 1");
+		let myReturnValue = CURRENT_MOVE_BOT1(myReturnValue);
+		}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 2"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 2");
+		let myReturnValue = CURRENT_MOVE_BOT2(myReturnValue);
+		}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 3"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 3");
+		let myReturnValue = CURRENT_MOVE_BOT3(myReturnValue);		
+		}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 4"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 4");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 5"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 5");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Turn Right"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+
+	if (EXECUTE_CURRENT_COMMAND == "If Your Armor is Below 300 ..."){
+		console.log("Call EXECUTE_CURRENT_COMMAND = If Your Armor is Below 300 ...");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Backward 1"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 1");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Backward 2"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 2");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Backward 3"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 3");}
+
+	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");}
+
 
 }//for (var p ....
 
@@ -454,40 +506,55 @@ function ParseString(strParse, startParse, endParse) {
 // MOVEMENT FUNCTIONS (placeholder implementations)
 // ============================================================================
 
-export async function CURRENT_MOVE_BOT1()       { console.log("CURRENT_MOVE_BOT1"); }
-export async function CURRENT_MOVE_BOT2()       { console.log("CURRENT_MOVE_BOT2");
+export async function CURRENT_MOVE_BOT1(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT1"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOT2(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT2");
 		for (var m = 0; m < 1000; m++){
 const TrapMe = m +100;
 		}
- }
-export async function CURRENT_MOVE_BOT3(Kelpies, pcount)       { 
+return [myReturnValue]; }
+export async function CURRENT_MOVE_BOT3(myReturnValue)       { 
 
-console.log("...Function CURRENT_MOVE_BOT3 Start...");
+console.log("Start Function CURRENT_MOVE_BOT3 Start...");
 //		for (var n = 0; n < 100; n++){
 //const TrapMe = n +100;
 //		}
 		
- return [pcount];
+ return [myReturnValue];
  }
-export async function CURRENT_MOVE_BOT4()       { console.log("CURRENT_MOVE_BOT4"); }
-export async function CURRENT_MOVE_BOT5()       { console.log("CURRENT_MOVE_BOT5"); }
-export async function CURRENT_MOVE_BOTMAX()     { console.log("CURRENT_MOVE_BOTMAX"); }
-export async function CURRENT_MOVE_BOT_BACK1()  { console.log("CURRENT_MOVE_BOT_BACK1"); }
-export async function CURRENT_MOVE_BOT_BACK2()  { console.log("CURRENT_MOVE_BOT_BACK2"); }
-export async function CURRENT_MOVE_BOT_BACK3()  { console.log("CURRENT_MOVE_BOT_BACK3"); }
+export async function CURRENT_MOVE_BOT4(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT4"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOT5(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT5"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOTMAX(myReturnValue)     { console.log("Start Function CURRENT_MOVE_BOTMAX"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOT_BACK1(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK1"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOT_BACK2(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK2"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_BOT_BACK3(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK3"); 
+return [myReturnValue];}
 
 export async function CURRENT_ROTATE_BOT(direction) {
   console.log(`CURRENT_ROTATE_BOT: ${direction}`);
-}
+return [myReturnValue];}
 
-export async function CURRENT_MOVE_BLOCKED_ENEMY() { console.log("CURRENT_MOVE_BLOCKED_ENEMY"); }
-export async function CURRENT_MOVE_TOWARD_ENEMY()  { console.log("CURRENT_MOVE_TOWARD_ENEMY"); }
-export async function FIRE_MASTER_WEAPON()          { console.log("FIRE_MASTER_WEAPON"); }
-export async function FIRE_SECONDARY_WEAPON()       { console.log("FIRE_SECONDARY_WEAPON"); }
-export async function FIRE_ALL_WEAPONS()            { console.log("FIRE_ALL_WEAPONS"); }
-export async function CURRENT_ACTIVATE_SCANNER()   { console.log("CURRENT_ACTIVATE_SCANNER"); }
-export async function CURRENT_ACTIVATE_SELF_DESTRUCT() { console.log("CURRENT_ACTIVATE_SELF_DESTRUCT"); }
-export async function IDENTIFY_ANY_ENEMIES()        { console.log("IDENTIFY_ANY_ENEMIES"); }
+export async function CURRENT_MOVE_BLOCKED_ENEMY(myReturnValue) { console.log("Start Function CURRENT_MOVE_BLOCKED_ENEMY"); 
+return [myReturnValue];}
+export async function CURRENT_MOVE_TOWARD_ENEMY(myReturnValue)  { console.log("Start Function CURRENT_MOVE_TOWARD_ENEMY"); 
+return [myReturnValue];}
+export async function FIRE_MASTER_WEAPON(myReturnValue)          { console.log("Start Function FIRE_MASTER_WEAPON"); 
+return [myReturnValue];}
+export async function FIRE_SECONDARY_WEAPON(myReturnValue)       { console.log("Start Function FIRE_SECONDARY_WEAPON"); 
+return [myReturnValue];}
+export async function FIRE_ALL_WEAPONS(myReturnValue)            { console.log("Start Function FIRE_ALL_WEAPONS"); 
+return [myReturnValue];}
+export async function CURRENT_ACTIVATE_SCANNER(myReturnValue)   { console.log("Start Function CURRENT_ACTIVATE_SCANNER"); 
+return [myReturnValue];}
+export async function CURRENT_ACTIVATE_SELF_DESTRUCT(myReturnValue) { console.log("Start Function CURRENT_ACTIVATE_SELF_DESTRUCT"); 
+return [myReturnValue];}
+export async function IDENTIFY_ANY_ENEMIES(myReturnValue)        { console.log("Start Function IDENTIFY_ANY_ENEMIES"); 
+return [myReturnValue];}
 
 export async function CURRENT_ARMOR_WEAK(threshold) {
   console.log(`CURRENT_ARMOR_WEAK: threshold=${threshold}`);
