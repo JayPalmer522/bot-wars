@@ -294,8 +294,8 @@ console.log(lists[3].commands);
 //console.log(lists[5].commands);
 ///////////////// CALL TO GET COMMANDS ////////////////////////
 
-  console.log(" result:");
-  console.log(JSON.stringify(result));
+//  console.log(" result:");
+//  console.log(JSON.stringify(result));
 //const manager = await buildOrdersListsManager(OrdersLitstIDs);
 
 console.log("... JAYTEST 2 ...");
@@ -493,7 +493,7 @@ console.log("... function loadOrdersLists End ...");
 export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 		console.log("...Function MAIN COMBAT LOOP Start...");
 ////////  Run STARTING_MAP_SQUARES /////////////////
-  const [GAME_MAP_BOTS, GAME_MAP_SQUARES, GAME_MAP_BULLETS] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+  const [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
   console.log("Main Loop GAME_MAP_BOTS:" + GAME_MAP_BOTS); //Working here.
 //  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES); //Working here.
 //		console.log(" JJJJJ: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
@@ -540,146 +540,147 @@ console.log("...Function MAIN COMBAT LOOP End...");
  */
 export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
     console.log("...Function STARTING_MAP_SQUARES Start...");
-///////////////////////////////////////////////////
-///////////// Creates a string ////////////////////
-///////////////////////////////////////////////////
-//  let MyFacing = "West";
-//  let BotFacing = "";
-//  for (let MyTemp = 1; MyTemp <= 40; MyTemp++) {
-//	if (MyFacing == "West"){
-//		BotFacing = BotFacing + MyTemp + ", West, ";
-//     window.alert(" BotFacing: " + BotFacing);
-//		MyFacing = "East";
-//	}
-//	else {
-//		BotFacing = BotFacing + MyTemp + ", East, ";		
-//		MyFacing = "West";
-//	}	  
-//  }
-//    console.log(" BotFacing: " + BotFacing);
-///////////////////////////////////////////////////
-///////////// Creates an array ////////////////////
-///////////////////////////////////////////////////
-//const MyBotFacing = ['North','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','West','East','South','South','South','South'];
 
-let MyBotStarting = ['0','1','9','2','10','11','19','12','20','21','29','22','30','31','39','32','40','41','49','42','50','51','59','52','60','61','69','62','70','71','79','72','80','81','89','82','90','91','99','92','100'];
-//let MyBotStarting = ('0','1','9','2','10','11','19','12','20','21','29','22','30','31','39','32','40','41','49','42','50','51','59','52','60','61','69','62','70','71','79','72','80','81','89','82','90','91','99','92','100');
+let MyBotStarting = ['1','9','2','10','11','19','12','20','21','29','22','30','31','39','32','40','41','49','42','50','51','59','52','60','61','69','62','70','71','79','72','80','81','89','82','90','91','99','92','100'];
+
 console.log("...Funk 1...");
 	
 let botIndex = 0;
-var BotCount = 1;
+var BotCount = 0;
 var BotID = "";
 var BotFlag = true;
 var FACING_DIR = "E";
 var STARTING_LOC = "'0'";
 var CURRENT_BOT = "'0'";
+var MY_BOT = "";
 var CURRENT_BOT_COUNT = 1;
 const GAME_MAP_FACING = [];
 const GAME_MAP_BULLETS = [];
 const GAME_MAP_SQUARES = [];
+const GAME_MAP_DAMAGE = [];
 const GAME_MAP_BOTS = [];
 const BASIC_MAP_NUMBERS = [];	
+const _MAP_NUMBERS = [];	
+
+
+///// Create BASIC_MAP_NUMBERS and GAME_MAP_BULLETS //////
 for (let k = 1; k <= 100; k++) {
-///////////// Create BASIC_MAP_NUMBERS /////////////////
     BASIC_MAP_NUMBERS.push(k); /// BASIC_MAP_NUMBERS - SUCCESS!
+    GAME_MAP_BULLETS.push(0); /// BASIC_MAP_NUMBERS - SUCCESS!
 }// (let k = 1; #1 ...
 
-
-
-for (let k = 1; k <= 100; k++) {
 ///////////// Create GAME_MAP_BOTS /////////////////
+for (let k = 1; k <= 100; k++) {
 	STARTING_LOC = JSON.stringify(k);
 	if (MyBotStarting.includes(STARTING_LOC)){ // If a starting location ...
-console.log("--kA-" + k + "----");
+//console.log("--kA-" + k + "----");
 CURRENT_BOT_COUNT = JSON.stringify(CURRENT_BOT_COUNT);
-		GAME_MAP_BOTS.push(CURRENT_BOT_COUNT);	
-CURRENT_BOT_COUNT++;
+		BotID = MyBotStarting[BotCount];
+		GAME_MAP_BOTS.push(BotID);	
+		BotCount++;
+		CURRENT_BOT_COUNT++;
 		}//if (MyBotStarting.includes(k)
 	else {
 		GAME_MAP_BOTS.push("0");
 	}//else if (MyBotStarting.includes
- 
-}// for (let k = 1
+}// for (let k = 1 ...
+
+
+////////////// Create GAME_MAP_FACING ////////////
+BotCount = 0;
+FACING_DIR = "E";
+for (MY_BOT of GAME_MAP_BOTS)  {
+	if (MY_BOT == "0"){
+//console.log("-MY_BOT-" + MY_BOT + " ==  0");
+		GAME_MAP_FACING.push("0");
+	} else {// if (MY_BOT == "0
+	if (FACING_DIR == "W"){  // if (FACING_DIR = "W"
+		GAME_MAP_FACING.push("W");//alterates starting FACING East or West.
+		}// else if (FACING_DIR = "W
+	else{ // if (FACING_DIR = "E"1
+//	if (FACING_DIR = "E"){ // if (FACING_DIR = "E"1
+			GAME_MAP_FACING.push("E");
+		}// else if (FACING_DIR = "E"
+	if (FACING_DIR == "W"){  // if (FACING_DIR = "W"1
+		FACING_DIR = "E";
+	} else {//if (FACING_DIR = "E"2
+		FACING_DIR = "W";
+		}// else if (FACING_DIR = "W"2
+	}//else if (MY_BOT == "0
+}// for (CURRENT_BOT of	
 
 
 
+////////////// Create GAME_MAP_DAMAGE ////////////
 
+var strParse = "";
+var startParse = "";
+var endParse = "";
+var strParseReturn = "";
+var strParseReturn2 = "";
+var strFrame = "";
+var strArmor = "";
+var strArmor1 = "";
+var strArmor2 = "";
+var BOT_ARMOR = "";
 
+BotCount = 0;
+for (MY_BOT of GAME_MAP_BOTS)  {
+	if (MY_BOT == "0"){
+//console.log("-MY_BOT-" + MY_BOT + " ==  0");
+		GAME_MAP_DAMAGE.push("0");
+	} else {
+		BotCount++;
+		for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST) {
+			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+//console.log("strParse: " + strParse);			
+			startParse = "combatBotNumber";
+			endParse = "EndOfData";
+			strFrame = ParseString(strParse, startParse, endParse);
+			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+//console.log("strParse: " + strParse);			
+			startParse = "slots, ";
+			endParse = " ND,";
+			strArmor1 = ParseString(strParse, startParse, endParse);
+//console.log("--strArmor1--" + strArmor1);
+			startParse = "armor";
+			endParse = "sensor";
+			strArmor = ParseString(strParse, startParse, endParse);
+//console.log("--strArmor--" + strArmor);
+			startParse = "slots, ";
+			endParse = " AD,";
+			strArmor2 = ParseString(strArmor, startParse, endParse);
+//console.log("--strArmor2--" + strArmor2);
+			BOT_ARMOR = Number(strArmor1) + Number(strArmor2);
+//console.log("--BOT_ARMOR--" + BOT_ARMOR);
 
-//for (let k = 1; k <= 100; k++) {
-///////////// Create GAME_MAP_BOTS /////////////////
-//	STARTING_LOC = JSON.stringify(k);
-//	if (MyBotStarting.includes(STARTING_LOC)){ // If a starting location ...
-//console.log("--kA-" + k + "----");
-//		for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST)  {				
-				// Get combatBotNumber
-				//CURRENT_BOT = JSON.stringify(CURRENT_BOT) + "EndOfData";
-				// Parse combatBotNumber
-				// Parse combatBotNumber
-//				const strParse = CURRENT_BOT;
-//				const startParse = "combatBotNumber";
-//				const endParse = "EndOfData";
-//				const strParseReturn = ParseString(strParse, startParse, endParse);//console.log("...Funk 4..."  strParseReturn);// ...Funk 4...":1}
-///				let strParseReturn2 = strParseReturn.slice(2);
-//				const BotID = strParseReturn2.slice(0, -1); 
-//console.log("--BotIDA-" + BotID + "--BotCount- " + BotCount + "--k- " + k);
-			//if (BotFlag = true){
+//			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+			startParse = "combatBotNumber";
+			endParse = "EndOfData";
+			strParseReturn = ParseString(strParse, startParse, endParse);
+			strParseReturn2 = strParseReturn.slice(2);
+			BotID = strParseReturn2.slice(0, -1); 
+//console.log("--BotID--" + BotID + "----"); 
+//////MAP WITH ARMY ID ????
+//////MAP WITH Master Damage ????
+//////MAP WITH Secondary Damage ????
 
-//IF BOTID = BOTCOUNT!!!!!!!!!!!!!!!!!!!!!!!!!!!
-//				if (BotFlag = true)
-//{
-//					if(BotCount = k){
-//						BotCount++;
-//////PUSH//////////						GAME_MAP_BOTS.push(BotID);
-//}	
-//						BotFlag = false;
-//					}// if (BotFlag 
-				//}// for (CURRENT_BOT of	
-//			}//if (MyBotStarting.includes(k)
-//		}//if(BotCount = k
-//		else {
-//////PUSH//////////			GAME_MAP_BOTS.push("0");
-//	}// (let k = 1; #2 ...
- 
-//	}// for (let k = 1
-	
-	
+			if (BotCount == BotID){
+				GAME_MAP_DAMAGE.push(JSON.stringify(BOT_ARMOR));
+			}//if (MY_BOT == BotID
+		}//for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST
+	}//else {if (MY_BOT == "0 
+}// for (CURRENT_BOT of	
+
 console.log("BASIC_MAP_NUMBERS:", JSON.stringify(BASIC_MAP_NUMBERS));
 console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("...Funk 2...");
+console.log("GAME_MAP_BULLETS:", JSON.stringify(GAME_MAP_BULLETS));
+console.log("GAME_MAP_FACING:", JSON.stringify(GAME_MAP_FACING));
+console.log("GAME_MAP_DAMAGE:", JSON.stringify(GAME_MAP_DAMAGE));
 
-	return [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS];//GAME_MAP_SQUARES, 
+	return [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE];//GAME_MAP_SQUARES, 
 } // End of Function
 	
-	
-//    for (let k = 1; k <= 100; k++) {
-//		STARTING_LOC = JSON.stringify(k);
-//		if (MyBotStarting.includes(STARTING_LOC)){console.log(".Funky: " + STARTING_LOC)}else {console.log(".SUCKS: " + STARTING_LOC)}; 
-//    for (let square = 1; square <= 100; square++) {
-//      if (BASIC_MAP_NUMBERS.has(square) && botIndex < ALL_BOTS_IN_COMBAT_LIST.length) {
-//		let TEMP_BOT_NUMBER = ALL_BOTS_IN_COMBAT_LIST[botIndex].combatBotNumber;
-//        botIndex++;
-//		if (square = 1){FACING_DIR = "E"};/// STARTS FACING EAST!
-//        GAME_MAP_SQUARES.push(square);
-///////////////  ADD TO COMBAT_RECORD /////////////////////////		
-//		COMBAT_RECORD.push("Place Bot " + TEMP_BOT_NUMBER + " facing "+ MyBotFacing[TEMP_BOT_NUMBER] + " on ANI_MAP_SPACE " + MyBotStarting[botIndex] + ".");
-//		GAME_MAP_BULLETS.push(0);
-//		GAME_MAP_FACING.push(FACING_DIR);
-//		if (FACING_DIR = "E"){FACING_DIR = "W"} else {FACING_DIR = "E"};//alterates starting FACING East or West.
-//      } else {
-//        GAME_MAP_SQUARES.push(square);
-//		GAME_MAP_BULLETS.push(0);
-//		GAME_MAP_FACING.push("0");
-//      }
-//    }
-//    console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-//    console.log("GAME_MAP_SQUARES:", JSON.stringify(GAME_MAP_SQUARES));
-//    console.log("GAME_MAP_BULLETS:", JSON.stringify(GAME_MAP_BULLETS));
-//    console.log("GAME_MAP_FACING:", JSON.stringify(GAME_MAP_FACING));
-    console.log("...Function STARTING_MAP_SQUARES End...");	
-//  } catch (error) {
-//    console.error("STARTING_MAP_SQUARES error:", error);
-//    return [];
 
 
 /**
@@ -885,7 +886,7 @@ console.log("...Function EXECUTE_ORDERS_LIST End...");
 
 ////////////////////////////////////////////////////////////////
 function ParseString(strParse, startParse, endParse) {
- console.log("...Function ParseString Start...");
+ //console.log("...Function ParseString Start...");
 
  //console.log("...strParse: " + strParse + " ...startParse: " + startParse + " ...endParse: " + endParse);
   const startIndexParse = strParse.indexOf(startParse);
