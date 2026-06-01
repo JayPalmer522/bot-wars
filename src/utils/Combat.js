@@ -515,7 +515,7 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 console.log(".XXX: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
 
 //////////// Call EXECUTE_ORDERS_LIST ////////////////////
-			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT)
+			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT)
 		}//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
 //	 		Run function REMOVE_DESTROYED_BOTS.			  
@@ -633,7 +633,7 @@ for (MY_BOT of GAME_MAP_BOTS)  {
 		BotCount++;
 		for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST) {
 			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-//console.log("strParse: " + strParse);			
+console.log("strParse: " + strParse);			
 			startParse = "combatBotNumber";
 			endParse = "EndOfData";
 			strFrame = ParseString(strParse, startParse, endParse);
@@ -720,11 +720,12 @@ console.log("GAME_MAP_DAMAGE:", JSON.stringify(GAME_MAP_DAMAGE));
  * 
  */
 
-export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, CURRENT_BOT) {
+export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT) {
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
 
 //   console.log("GAME_MAP_BULLETS: ", JSON.stringify(GAME_MAP_BULLETS));
-
+var TotalOfCommands = "";
+var EXECUTE_CURRENT_COMMAND = "";
  const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
  const startParse = "combatBotNumber";
  const endParse = "EndOfData";
@@ -732,31 +733,46 @@ export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS
  let strParseReturn2 = strParseReturn.slice(2);
  const BotID = strParseReturn2.slice(0, -1); 
  console.log("--BotID--" + BotID + "----");
- 
+///// THIS SECTION STRIPS NON-NUMERIC CHARACTERS!!!!!!!
+	strParseReturn2 = strParseReturn.slice(2);
+	console.log("strParseReturn2LLL: ");
+	console.log(strParseReturn2);
+	var OrdersListID = strParseReturn2.slice(0, -2); 
+//	console.log(" OrdersListID: --OrdersListID--" + OrdersListID + "----");
+
 //const TotalOfCommands = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands.length;
 
-
-
-		for (var pcount = 0; pcount < TotalOfCommands; pcount++){
+		for (var pcount = 0; pcount < 20; pcount++){
 
  	let MyCount = JSON.stringify(pcount);
 
-//const EXECUTE_CURRENT_COMMAND = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount].then (console.log(".EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND));
-
-const EXECUTE_CURRENT_COMMAND = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]; 
+EXECUTE_CURRENT_COMMAND = "Turn Right";
 
 console.log("TEST 21");
-///////////////////////////////////
-// [GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT3(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD)
-///////////////////////////////////////////
-console.log("TEST 22");
 
 console.log("..EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
 
-//console.log(".ZZZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands[MyCount]);
+	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");
+		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
+		}
 
-// (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[1].ordersListId)).commands[1]);
- console.log(pcount + "...BotID: " + BotID + " ...TotalOfCommands: " + TotalOfCommands + " MyCount: " + MyCount);
+	if (EXECUTE_CURRENT_COMMAND == "Turn Right"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Right");
+		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+		}
+
+	if (EXECUTE_CURRENT_COMMAND == "Veer Left"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Veer Left");
+		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
+		}
+
+	if (EXECUTE_CURRENT_COMMAND == "Veer Right"){
+		console.log("Call EXECUTE_CURRENT_COMMAND = Veer Right");
+		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
+		}
+
+
 	
 	if (EXECUTE_CURRENT_COMMAND == "Fire Master Weapon"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");
@@ -825,19 +841,6 @@ console.log("..EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
 		
 		}
 
-
-	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Turn Right"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
 
 	if (EXECUTE_CURRENT_COMMAND == "If Your Armor is Below 300 ..."){
 		console.log("Call EXECUTE_CURRENT_COMMAND = If Your Armor is Below 300 ...");
@@ -908,6 +911,85 @@ function ParseString(strParse, startParse, endParse) {
 // ============================================================================
 // MOVEMENT FUNCTIONS (placeholder implementations)
 // ============================================================================
+
+export async function CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) { console.log("Start Function CURRENT_TURN_RIGHT"); 
+console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
+console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
+	var BotCount = 0;
+	var SpaceCount = 0;
+	var MY_BOT = "";
+	var NewDir = "";
+	var startParse = "combatBotNumber";
+	var endParse = "EndOfData";
+	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+	var strParseReturn = ParseString(strParse, startParse, endParse);
+	var strParseReturn2 = strParseReturn.slice(2);
+	var BotID = strParseReturn2.slice(0, -1); 
+	for (MY_BOT of GAME_MAP_BOTS)  {
+		if (MY_BOT == BotID){
+console.log("--JAYTEST 50--"); 
+console.log("--BotID--" + BotID); 
+console.log("--MY_BOT--" + MY_BOT); 
+console.log("--BotCount--" + BotCount); 
+console.log("--SpaceCount--" + SpaceCount); 
+///////////////////////// TURN RIGHT /////////////////////////////
+			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "E"};
+			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "SE"};
+			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "S"};
+			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "SW"};
+			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "W"};
+			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "NW"};
+			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "N"};
+			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "NE"};
+			GAME_MAP_FACING[SpaceCount] = NewDir;
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
+			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
+			BotCount++;
+		}// if (MY_BOT == "0
+	SpaceCount++;
+	}//for (MY_BOT of GAME_MAP_BOTS
+
+console.log("GAME_MAP_FACING After: ", JSON.stringify(GAME_MAP_FACING));
+return [GAME_MAP_FACING, COMBAT_RECORD];}
+
+// const fruits = ['apple', 'banana', 'cherry'];
+//fruits[1] = 'blueberry'; 
+//console.log(fruits); // ['apple', 'blueberry', 'cherry']
+
+
+
+export async function CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_TURN_LEFT"); 
+var BotCount =1;
+var NewDir = "E";
+
+
+/////////////////////////TURN LEFT /////////////////////////////
+			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "W"};
+			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "SW"};
+			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "N"};
+			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "NW"};
+			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "E"};
+			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "NE"};
+			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "S"};
+			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "SE"};
+
+
+return [GAME_MAP_FACING, COMBAT_RECORD];}
+
+export async function CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_VEER_RIGHT"); 
+return [GAME_MAP_FACING, COMBAT_RECORD];}
+
+
+export async function CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_VEER_LEFT"); 
+return [GAME_MAP_FACING, COMBAT_RECORD];}
+
+
+
+
+
+
+
 
 export async function CURRENT_MOVE_BOT1(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT1"); 
 return [myReturnValue];}
@@ -1250,6 +1332,22 @@ export async function START_COMBAT() {
   return { success: true };
 }
 
-// ============================================================================
-// ARMY SETUP
-// ============================================================================
+//=====================================================================
+// COMBAT_RECORD_STRINGS //======================================================================
+/*
+Place Bot 01 facing West on ANI_MAP_SPACE 9.
+Start turn of Bot 01 facing West on ANI_MAP_SPACE 9.
+Rotate Bot 01 to face SouthWest on ANI_MAP_SPACE 9.
+Activate Scan Bot 01 facing SouthWest on ANI_MAP_SPACE 9.
+Locate Enemy Bots at ANI_MAP_SPACE 0, 0, 0, 0, 0.
+Locate Allied Bots at ANI_MAP_SPACE 19, 29, 39, 20, 10.
+Move Bot 01 facing SouthWest from ANI_MAP_SPACE 9 to 18.
+Fired Bullet All on ANI_MAP_SPACE 18 facing SouthWest Range 4.
+Traveling Bullet All on ANI_MAP_SPACE 27 facing South Range 3.
+Traveling Bullet All on ANI_MAP_SPACE 36 facing South Range 2.
+Traveling Bullet All on ANI_MAP_SPACE 45 facing South Range 1.
+Striking Bullet All on ANI_MAP_SPACE 54 facing South Range 0.
+Damage strikes Bot 26 on ANI_MAP_SPACE 54 total 150.
+Destroyed Bot 26 on ANI_MAP_SPACE 54.
+Victory to Player1 by Army2 surviving Allied 7 Bots surviving Enemies 0 Bots. 
+*/
