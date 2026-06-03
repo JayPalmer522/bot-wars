@@ -206,39 +206,39 @@ console.log("... JAYTEST 8 ...");
 	var endParse = "slotsUsed";
 	var strParse = JSON.stringify(CURRENT_BOT);
 	var strParseReturn = ParseString(strParse, startParse, endParse);
-	console.log("strParseReturnXXX: ");
-	console.log(strParseReturn);
+//	console.log("strParseReturnXXX: ");
+//	console.log(strParseReturn);
 ///// THIS SECTION STRIPS NON-NUMERIC CHARACTERS!!!!!!!
 	let strParseReturn2 = strParseReturn.slice(2);
-	console.log("strParseReturn2YYY: ");
-	console.log(strParseReturn2);
+//	console.log("strParseReturn2YYY: ");
+//	console.log(strParseReturn2);
 	var OrdersListID = strParseReturn2.slice(0, -2); 
 //	console.log(" OrdersListID: --OrdersListID--" + OrdersListID + "----");
-	console.log("OrdersListIDXXX: ");
-	console.log(OrdersListID);	
-	console.log("... JAYTEST 10 ...");
+//	console.log("OrdersListIDXXX: ");
+//	console.log(OrdersListID);	
+//	console.log("... JAYTEST 10 ...");
 ///// THIS SECTION STRIPS OUT DUPLICATE NUMBERS!!!!!!!
 	if (OrdersListID != "undefined"){
-		console.log("OrdersListIDYYY: ");
-		console.log(OrdersListID);
-		console.log("OrdersListID != undefined");
+//		console.log("OrdersListIDYYY: ");
+//		console.log(OrdersListID);
+//		console.log("OrdersListID != undefined");
 		if (OrdersLitstIDs.includes(OrdersListID)){
 		} else {
-		console.log("--- else ---");
-			console.log("OrdersListIDZZZ: ");
-			console.log(OrdersListID);
+//		console.log("--- else ---");
+//			console.log("OrdersListIDZZZ: ");
+//			console.log(OrdersListID);
 /////////////			OrdersListID = Number(OrdersListID); /////////
 
 			Number(OrdersListID); /////////
-			console.log("OrdersListIDJJJ: ");
-			console.log(OrdersListID);
+//			console.log("OrdersListIDJJJ: ");
+//			console.log(OrdersListID);
 			ids[idsCount] = [OrdersListID];
 //			ALL_ORDERS_TEMP[idsCount].push(OrdersListID);
             Number(OrdersListID);
 			ALL_ORDERS_TEMP[idsCount] = OrdersListID;
-console.log("ALL_ORDERS_TEMP[idsCount]");
-console.log(ALL_ORDERS_TEMP[idsCount]);
-console.log("JAYTEST 66");
+//console.log("ALL_ORDERS_TEMP[idsCount]");
+//console.log(ALL_ORDERS_TEMP[idsCount]);
+//console.log("JAYTEST 66");
 
 			idsCount++;
 			TestCount++;
@@ -515,7 +515,7 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 console.log(".XXX: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
 
 //////////// Call EXECUTE_ORDERS_LIST ////////////////////
-			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT)
+			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE)
 		}//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
 	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
 //	 		Run function REMOVE_DESTROYED_BOTS.			  
@@ -554,11 +554,11 @@ var STARTING_LOC = "'0'";
 var CURRENT_BOT = "'0'";
 var MY_BOT = "";
 var CURRENT_BOT_COUNT = 1;
-const GAME_MAP_FACING = [];
+//var GAME_MAP_FACING = [];
 const GAME_MAP_BULLETS = [];
 const GAME_MAP_SQUARES = [];
 const GAME_MAP_DAMAGE = [];
-const GAME_MAP_BOTS = [];
+//const GAME_MAP_BOTS = [];
 const BASIC_MAP_NUMBERS = [];	
 const _MAP_NUMBERS = [];	
 
@@ -569,45 +569,32 @@ for (let k = 1; k <= 100; k++) {
     GAME_MAP_BULLETS.push(0); /// BASIC_MAP_NUMBERS - SUCCESS!
 }// (let k = 1; #1 ...
 
+
 ///////////// Create GAME_MAP_BOTS /////////////////
-for (let k = 1; k <= 100; k++) {
-	STARTING_LOC = JSON.stringify(k);
-	if (MyBotStarting.includes(STARTING_LOC)){ // If a starting location ...
-//console.log("--kA-" + k + "----");
-CURRENT_BOT_COUNT = JSON.stringify(CURRENT_BOT_COUNT);
-		BotID = MyBotStarting[BotCount];
-		GAME_MAP_BOTS.push(BotID);	
-		BotCount++;
-		CURRENT_BOT_COUNT++;
-		}//if (MyBotStarting.includes(k)
-	else {
-		GAME_MAP_BOTS.push("0");
-	}//else if (MyBotStarting.includes
-}// for (let k = 1 ...
+
+const GAME_MAP_BOTS =  ["1","3","0","0","0","0","0","0","2","4","5","7","0","0","0","0","0","0","6","8","9","11","0","0","0","0","0","0","10","12","13","15","0","0","0","0","0","0","14","16","17","19","0","0","0","0","0","0","18","20","21","23","0","0","0","0","0","0","22","24","25","27","0","0","0","0","0","0","26","28","29","31","0","0","0","0","0","0","30","32","33","35","0","0","0","0","0","0","34","36","37","39","0","0","0","0","0","0","38","40"]
+ 
+ 
+//for (let k = 1; k <= 100; k++) {
+//	STARTING_LOC = JSON.stringify(k);
+//	if (MyBotStarting.includes(STARTING_LOC)){ // If a starting location ...
+//console.log("--kA-" + k + "--BotCount-" + BotCount + "--CURRENT_BOT_COUNT-" + CURRENT_BOT_COUNT + "--GAME_MAP_BOTS--");
+//		CURRENT_BOT_COUNT = JSON.stringify(CURRENT_BOT_COUNT);
+//		BotID = MyBotStarting[BotCount];
+//		GAME_MAP_BOTS.push(BotID);	
+//		BotCount++;
+//		CURRENT_BOT_COUNT++;
+//		}//if (MyBotStarting.includes(k)
+//	else {
+//		GAME_MAP_BOTS.push("0");
+//	}//else if (MyBotStarting.includes
+//}// for (let k = 0 ...
 
 
 ////////////// Create GAME_MAP_FACING ////////////
-BotCount = 0;
-FACING_DIR = "E";
-for (MY_BOT of GAME_MAP_BOTS)  {
-	if (MY_BOT == "0"){
-//console.log("-MY_BOT-" + MY_BOT + " ==  0");
-		GAME_MAP_FACING.push("0");
-	} else {// if (MY_BOT == "0
-	if (FACING_DIR == "W"){  // if (FACING_DIR = "W"
-		GAME_MAP_FACING.push("W");//alterates starting FACING East or West.
-		}// else if (FACING_DIR = "W
-	else{ // if (FACING_DIR = "E"1
-//	if (FACING_DIR = "E"){ // if (FACING_DIR = "E"1
-			GAME_MAP_FACING.push("E");
-		}// else if (FACING_DIR = "E"
-	if (FACING_DIR == "W"){  // if (FACING_DIR = "W"1
-		FACING_DIR = "E";
-	} else {//if (FACING_DIR = "E"2
-		FACING_DIR = "W";
-		}// else if (FACING_DIR = "W"2
-	}//else if (MY_BOT == "0
-}// for (CURRENT_BOT of	
+
+const GAME_MAP_FACING = ["E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W"];
+
 
 
 
@@ -629,11 +616,11 @@ for (MY_BOT of GAME_MAP_BOTS)  {
 	if (MY_BOT == "0"){
 //console.log("-MY_BOT-" + MY_BOT + " ==  0");
 		GAME_MAP_DAMAGE.push("0");
-	} else {
+	} else { // if (MY_BOT == "0
 		BotCount++;
 		for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST) {
 			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-console.log("strParse: " + strParse);			
+//console.log("strParse: " + strParse);			
 			startParse = "combatBotNumber";
 			endParse = "EndOfData";
 			strFrame = ParseString(strParse, startParse, endParse);
@@ -660,11 +647,10 @@ console.log("strParse: " + strParse);
 			strParseReturn = ParseString(strParse, startParse, endParse);
 			strParseReturn2 = strParseReturn.slice(2);
 			BotID = strParseReturn2.slice(0, -1); 
-//console.log("--BotID--" + BotID + "----"); 
+//console.log("...--BotCount--" + BotCount + "--BotID--" + BotID + "----"); 
 //////MAP WITH ARMY ID ????
 //////MAP WITH Master Damage ????
 //////MAP WITH Secondary Damage ????
-
 			if (BotCount == BotID){
 				GAME_MAP_DAMAGE.push(JSON.stringify(BOT_ARMOR));
 			}//if (MY_BOT == BotID
@@ -677,6 +663,8 @@ console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
 console.log("GAME_MAP_BULLETS:", JSON.stringify(GAME_MAP_BULLETS));
 console.log("GAME_MAP_FACING:", JSON.stringify(GAME_MAP_FACING));
 console.log("GAME_MAP_DAMAGE:", JSON.stringify(GAME_MAP_DAMAGE));
+
+console.log("...Function STARTING_MAP_SQUARES End...");
 
 	return [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE];//GAME_MAP_SQUARES, 
 } // End of Function
@@ -720,12 +708,12 @@ console.log("GAME_MAP_DAMAGE:", JSON.stringify(GAME_MAP_DAMAGE));
  * 
  */
 
-export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT) {
+export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE) {
  console.log("...Function EXECUTE_ORDERS_LIST Start...");
 
-//   console.log("GAME_MAP_BULLETS: ", JSON.stringify(GAME_MAP_BULLETS));
-var TotalOfCommands = "";
-var EXECUTE_CURRENT_COMMAND = "";
+
+ var TotalOfCommands = "";
+ var EXECUTE_CURRENT_COMMAND = "";
  const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
  const startParse = "combatBotNumber";
  const endParse = "EndOfData";
@@ -743,14 +731,27 @@ var EXECUTE_CURRENT_COMMAND = "";
 //const TotalOfCommands = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands.length;
 
 		for (var pcount = 0; pcount < 20; pcount++){
+			let MyCount = JSON.stringify(pcount);
 
- 	let MyCount = JSON.stringify(pcount);
+// EXECUTE_CURRENT_COMMAND = "Turn Right";
+EXECUTE_CURRENT_COMMAND = "Move Forward 1";
 
-EXECUTE_CURRENT_COMMAND = "Turn Right";
+
+
 
 console.log("TEST 21");
-
 console.log("..EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
+
+
+	if (EXECUTE_CURRENT_COMMAND == "Move Forward 1"){
+		console.log("...Call EXECUTE_CURRENT_COMMAND = Move Forward 1");
+		[GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE]=CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+		}
+
+/*
+The TypeError: object is not iterable error occurs because your code tried to loop over, spread, or destructure a standard JavaScript Object ({}) using a mechanism that only works on iterable data types like Array, Map, or Set. Standard objects do not implement the required Symbol.iterator method by default. Because this happened inside a (in promise) block, the error was triggered inside an asynchronous operation like an async/await function, a .then() block, or a network request handler.Common Root CausesCheck your code for the following four frequent mistakes:1. Array destructuring a plain objectYou used square brackets [] instead of curly braces {} when unpacking a returned object. This often happens with React hooks or API responses.Wrong: const [data, setData] = fetchUser(); (if fetchUser returns an object)Fix: const { data, setData } = fetchUser();2. Spreading a plain object into an arrayYou used the ... spread operator on an object inside array brackets.Wrong: const newArray = [...myObject];Fix: const newArray = [{ ...myObject }]; or const newArray = Object.values(myObject);3. Looping with for...ofYou used for...of instead of for...in to loop over an object's properties.Wrong: for (let item of myObject) { ... }Fix: for (let key in myObject) { ... } or for (let item of Object.values(myObject)) { ... }4. Invalid arguments in Promise.all or Object.fromEntries
+
+*/
 
 	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");
@@ -802,15 +803,8 @@ console.log("..EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
 
 	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
 		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_TOWARD_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+		[[GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE]] = CURRENT_MOVE_TOWARD_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 1"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 1");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT1(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-
-//		let myReturnValue = CURRENT_MOVE_BOT1(myReturnValue);
 		}
 
 	if (EXECUTE_CURRENT_COMMAND == "Move Forward 2"){
@@ -908,13 +902,185 @@ function ParseString(strParse, startParse, endParse) {
 //console.log(stripped); // "bnn"
 
 
-// ============================================================================
+// ==================================================================
 // MOVEMENT FUNCTIONS (placeholder implementations)
-// ============================================================================
+//===================================================================
+
+
+//JAYJAY
+
+
+
+export async function CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE){
+console.log("...... Function CURRENT_MOVE_BOT1 Start ..."); 
+//console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
+//console.log("..GAME_MAP_BOTS:" + JSON.stringify(GAME_MAP_BOTS));
+	var MY_BOT = "";  //CombatNumber of the Bot
+	var BotCount = 1;  //Number of Bot in the Array 
+	var CurrentSpace = 1; //Space on numbered map 
+	var NextSpace = 0; //Space on numbered map 
+	var NewSpace = ""; //Value on numbered map 
+	var OldSpace = ""; //Value on numbered map 
+	var IsOffMap = false;
+	var NextArraySpace = ""; //Number in the Array  
+	var CurrentArraySpace = ""; //Number in the Array 
+	
+////////////////////// 	GET combatBotNumber ////////////////////////
+	var startParse = "combatBotNumber";
+	var endParse = "EndOfData";
+	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+	var strParseReturn = ParseString(strParse, startParse, endParse);
+	var strParseReturn2 = strParseReturn.slice(2);
+	var BotID = strParseReturn2.slice(0, -1); 
+
+console.log("--JAYTEST 50--"); 
+	for (MY_BOT of GAME_MAP_BOTS)  {
+		if (MY_BOT == BotID){
+console.log("--BotID--" + BotID); 
+console.log("--MY_BOT--" + MY_BOT); 
+console.log("--BotCount--" + BotCount); 
+console.log("--CurrentSpace--" + CurrentSpace);
+
+			CurrentArraySpace = JSON.stringify(CurrentSpace - 1);
+			NextArraySpace = JSON.stringify(NextSpace - 1);
+
+///////////////////////// MOVE 1 /////////////////////////////
+console.log(" BotID: " + BotID + " NextSpace: " + NextSpace + "  CurrentSpace: " + CurrentSpace + "   .CURRENT_MOVE_BOT1");
+			if (GAME_MAP_FACING[CurrentArraySpace] == "N"){NextSpace = CurrentSpace - 10};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "NE"){NextSpace = CurrentSpace - 9};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "E"){NextSpace = CurrentSpace + 1};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "SE"){NextSpace = CurrentSpace + 11};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "S"){NextSpace = CurrentSpace + 10};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "SW"){NextSpace = CurrentSpace + 9};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "W"){NextSpace = CurrentSpace - 1};
+			if (GAME_MAP_FACING[CurrentArraySpace] == "NW"){NextSpace = CurrentSpace - 11};
+			
+console.log(" BotID: " + BotID + " NextSpace: " + NextSpace + "  CurrentSpace: " + CurrentSpace + "   .CURRENT_MOVE_BOT1");
+
+// at this point, you've identified the Bot you're trying to move, the space you're on, and the spot you want to move to. If the space is occupied, then send a message to Combat Record that this Bot's movement is blocked. Else swap the numbers of the two spaces in GAME_MAP_FACING, GAME_MAP_BOTS, and GAME_MAP_DAMAGE. Then send a message to Combat Record that this Bot's movement is complete.
+
+
+//!!!!!!!!!!! CHECK FOR OFF MAP 1 !!!!!!!!!!!!!!!
+			if (NextSpace > 100){OldSpace = IsOffMap = true;}//OFF MAP 
+			if (NextSpace < 1){OldSpace = IsOffMap = true;}//OFF MAP 
+			if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
+			if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
+			if (CurrentSpace < 20 && NextSpace > 80){OldSpace = IsOffMap = true;}//OFF MAP 
+			if (CurrentSpace > 80 && NextSpace < 20){OldSpace = IsOffMap = true;}//OFF MAP 
+//!!!!!!!!!!! CHECK FOR OFF MAP  2 !!!!!!!!!!!!!!!
+			if (IsOffMap == true){//OFF MAP 
+console.log("****** Bot is OFF MAP!");
+//					COMBAT_RECORD.push("Silly Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " is trying to move off of the game map.");
+console.log("*** Silly Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " is trying to move off of the game map. *****");
+			}//OFF MAP 
+			if (IsOffMap == false){// IsOffMap == false .. NOT OFF MAP 
+console.log("****** Bot is ON MAP!");
+
+////////////////// IF SPACE IS OCCUPIED /////////////////////
+console.log("--JAYTEST 57--"); 
+			NextArraySpace = JSON.stringify(NextSpace - 1);
+console.log(" NextArraySpace: " + NextArraySpace + "  NextArraySpace VALUE: " + GAME_MAP_BOTS[NextArraySpace]);
+
+				if (GAME_MAP_BOTS[NextArraySpace] !== "0"){// Space is Occupied ...
+console.log("--JAYTEST 60-- Next Space Occupied"); 
+//				COMBAT_RECORD.push("Trapped Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " can't move to occupied " + NextSpace + ".");
+console.log("*** Trapped Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " can't move to occupied " + NextSpace + ". *****");
+
+console.log("...GAME_MAP_FACING:");
+console.log(JSON.stringify(GAME_MAP_FACING));
+
+console.log("...GAME_MAP_BOTS:");
+console.log(JSON.stringify(GAME_MAP_BOTS));
+
+console.log("...GAME_MAP_DAMAGE:");
+console.log(JSON.stringify(GAME_MAP_DAMAGE));
+				}// if (GAME_MAP_BOTS[NextArraySpace] !== "0" .. Occupied ..
+			
+			
+////////////////// BEGIN MOVEMENT only /////////////////////
+				if (GAME_MAP_BOTS[NextArraySpace] == "0"){// Space Unoccupied ...
+console.log("--JAYTEST 60-- Next Space Unoccupied"); 
+
+					if (NextSpace > 100){OldSpace = IsOffMap = true;}//OFF MAP 
+					if (NextSpace < 1){OldSpace = IsOffMap = true;}//OFF MAP 
+					if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
+					if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
+					if (CurrentSpace < 20 && NextSpace > 80){OldSpace = IsOffMap = true;}//OFF MAP 
+					if (CurrentSpace > 80 && NextSpace < 20){OldSpace = IsOffMap = true;}//OFF MAP 
+console.log("--JAYTEST 62--"); 
+
+//////////////////////// MAKE CHANGES ////////////////////////////
+
+console.log("...GAME_MAP_FACING:");
+console.log(JSON.stringify(GAME_MAP_FACING));
+
+console.log("...GAME_MAP_BOTS:");
+console.log(JSON.stringify(GAME_MAP_BOTS));
+
+console.log("...GAME_MAP_DAMAGE:");
+console.log(JSON.stringify(GAME_MAP_DAMAGE));
+
+
+					NextArraySpace = JSON.stringify(NextSpace - 1);
+					
+console.log(" NextArraySpace: " + NextArraySpace + " NextArraySpace VALUE: " + GAME_MAP_BOTS[NextArraySpace]);
+
+					CurrentArraySpace = JSON.stringify(CurrentSpace - 1);
+			
+console.log(" CurrentArraySpace: " + CurrentArraySpace + "  NextArraySpace VALUE: ]" + GAME_MAP_BOTS[CurrentArraySpace]);
+
+					OldSpace = GAME_MAP_FACING[CurrentArraySpace]; 
+					NewSpace = GAME_MAP_FACING[NextArraySpace]; 
+					
+					GAME_MAP_FACING[CurrentArraySpace] = NewSpace;
+					GAME_MAP_FACING[NextArraySpace] = OldSpace;
+					
+					OldSpace = GAME_MAP_BOTS[CurrentArraySpace]; 
+					NewSpace = GAME_MAP_BOTS[NextArraySpace]; 
+
+					GAME_MAP_BOTS[CurrentArraySpace] = NewSpace;
+					GAME_MAP_BOTS[NextArraySpace] = OldSpace;
+
+					OldSpace = GAME_MAP_DAMAGE[CurrentArraySpace]; 
+					NewSpace = GAME_MAP_DAMAGE[NextArraySpace]; 
+					
+					GAME_MAP_DAMAGE[CurrentArraySpace] = NewSpace;
+					GAME_MAP_DAMAGE[NextArraySpace] = OldSpace;
+
+
+console.log("*** Move Bot " + BotID + " from ANI_MAP_SPACE " + CurrentSpace + " to " + NextSpace + ". *****");
+
+
+console.log("...GAME_MAP_FACING:");
+console.log(JSON.stringify(GAME_MAP_FACING));
+
+console.log("...GAME_MAP_BOTS:");
+console.log(JSON.stringify(GAME_MAP_BOTS));
+
+console.log("...GAME_MAP_DAMAGE:");
+console.log(JSON.stringify(GAME_MAP_DAMAGE));
+
+console.log("--JAYTEST 56--"); 
+					BotID = "";  //change of CombatNumber to keep it from cycling more than once.
+				}// if (GAME_MAP_BOTS[NextArraySpace] == "0" .. Unoccupied ..
+			
+			}// IsOffMap == false .. NOT OFF MAP 
+		
+			BotCount++;
+		}// if (MY_BOT == BotID
+	CurrentSpace++;
+	}// for (MY_BOT of GAME_MAP_BOTS
+console.log("...Function CURRENT_MOVE_BOT1 End..."); 
+return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
+}//End of Function 
+
+
+
+
 
 export async function CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) { console.log("Start Function CURRENT_TURN_RIGHT"); 
-console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
+console.log("GAME_MAP_BOTS:" + JSON.stringify(GAME_MAP_BOTS));
+console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
 	var BotCount = 0;
 	var SpaceCount = 0;
 	var MY_BOT = "";
@@ -925,9 +1091,11 @@ console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
 	var strParseReturn = ParseString(strParse, startParse, endParse);
 	var strParseReturn2 = strParseReturn.slice(2);
 	var BotID = strParseReturn2.slice(0, -1); 
+console.log("--JAYTEST 51--"); 
+
 	for (MY_BOT of GAME_MAP_BOTS)  {
 		if (MY_BOT == BotID){
-console.log("--JAYTEST 50--"); 
+console.log("--JAYTEST 52--"); 
 console.log("--BotID--" + BotID); 
 console.log("--MY_BOT--" + MY_BOT); 
 console.log("--BotCount--" + BotCount); 
@@ -946,11 +1114,11 @@ console.log("--SpaceCount--" + SpaceCount);
 			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
 			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
 			BotCount++;
-		}// if (MY_BOT == "0
+		}// if (MY_BOT == "0 .CURRENT_TURN_RIGHT
 	SpaceCount++;
 	}//for (MY_BOT of GAME_MAP_BOTS
 
-console.log("GAME_MAP_FACING After: ", JSON.stringify(GAME_MAP_FACING));
+console.log("GAME_MAP_FACING After: " + JSON.stringify(GAME_MAP_FACING));
 return [GAME_MAP_FACING, COMBAT_RECORD];}
 
 // const fruits = ['apple', 'banana', 'cherry'];
@@ -959,11 +1127,27 @@ return [GAME_MAP_FACING, COMBAT_RECORD];}
 
 
 
-export async function CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_TURN_LEFT"); 
-var BotCount =1;
-var NewDir = "E";
+export async function CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_TURN_LEFT"); 
 
-
+console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
+console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
+	var BotCount = 0;
+	var SpaceCount = 0;
+	var MY_BOT = "";
+	var NewDir = "";
+	var startParse = "combatBotNumber";
+	var endParse = "EndOfData";
+	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+	var strParseReturn = ParseString(strParse, startParse, endParse);
+	var strParseReturn2 = strParseReturn.slice(2);
+	var BotID = strParseReturn2.slice(0, -1); 
+	for (MY_BOT of GAME_MAP_BOTS)  {
+		if (MY_BOT == BotID){
+console.log("--JAYTEST 53--"); 
+console.log("--BotID--" + BotID); 
+console.log("--MY_BOT--" + MY_BOT); 
+console.log("--BotCount--" + BotCount); 
+console.log("--SpaceCount--" + SpaceCount); 
 /////////////////////////TURN LEFT /////////////////////////////
 			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "W"};
 			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "SW"};
@@ -973,26 +1157,99 @@ var NewDir = "E";
 			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "NE"};
 			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "S"};
 			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "SE"};
-
-
+			GAME_MAP_FACING[SpaceCount] = NewDir;
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
+			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
+			BotCount++;
+		}// if (MY_BOT == "0 .CURRENT_TURN_LEFT
+	SpaceCount++;
+	}//for (MY_BOT of GAME_MAP_BOTS
 return [GAME_MAP_FACING, COMBAT_RECORD];}
 
-export async function CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_VEER_RIGHT"); 
+
+export async function CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_VEER_RIGHT"); 
+console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
+console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
+	var BotCount = 0;
+	var SpaceCount = 0;
+	var MY_BOT = "";
+	var NewDir = "";
+	var startParse = "combatBotNumber";
+	var endParse = "EndOfData";
+	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+	var strParseReturn = ParseString(strParse, startParse, endParse);
+	var strParseReturn2 = strParseReturn.slice(2);
+	var BotID = strParseReturn2.slice(0, -1); 
+	for (MY_BOT of GAME_MAP_BOTS)  {
+		if (MY_BOT == BotID){
+console.log("--JAYTEST 54--"); 
+console.log("--BotID--" + BotID); 
+console.log("--MY_BOT--" + MY_BOT); 
+console.log("--BotCount--" + BotCount); 
+console.log("--SpaceCount--" + SpaceCount); 
+/////////////////////////TURN LEFT /////////////////////////////
+			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "NE"};
+			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "E"};
+			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "SE"};
+			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "S"};
+			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "SW"};
+			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "W"};
+			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "NW"};
+			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "N"};
+			GAME_MAP_FACING[SpaceCount] = NewDir;
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
+			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
+			BotCount++;
+		}// if (MY_BOT == "0 .CURRENT_VEER_RIGHT 
+	SpaceCount++;
+	}//for (MY_BOT of GAME_MAP_BOTS
 return [GAME_MAP_FACING, COMBAT_RECORD];}
 
 
-export async function CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT)       { console.log("Start Function CURRENT_VEER_LEFT"); 
+export async function CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_VEER_LEFT"); 
+console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
+console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
+	var BotCount = 0;
+	var SpaceCount = 0;
+	var MY_BOT = "";
+	var NewDir = "";
+	var startParse = "combatBotNumber";
+	var endParse = "EndOfData";
+	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
+	var strParseReturn = ParseString(strParse, startParse, endParse);
+	var strParseReturn2 = strParseReturn.slice(2);
+	var BotID = strParseReturn2.slice(0, -1); 
+	for (MY_BOT of GAME_MAP_BOTS)  {
+		if (MY_BOT == BotID){
+console.log("--JAYTEST 55--"); 
+console.log("--BotID--" + BotID); 
+console.log("--MY_BOT--" + MY_BOT); 
+console.log("--BotCount--" + BotCount); 
+console.log("--SpaceCount--" + SpaceCount); 
+/////////////////////////TURN LEFT /////////////////////////////
+			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "NW"};
+			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "N"};
+			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "NE"};
+			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "E"};
+			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "SE"};
+			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "S"};
+			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "NW"};
+			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "W"};
+			GAME_MAP_FACING[SpaceCount] = NewDir;
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
+			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
+			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
+			BotCount++;
+		}// if (MY_BOT == "0 .CURRENT_VEER_LEFT
+	SpaceCount++;
+	}//for (MY_BOT of GAME_MAP_BOTS
 return [GAME_MAP_FACING, COMBAT_RECORD];}
 
 
 
 
-
-
-
-
-export async function CURRENT_MOVE_BOT1(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT1"); 
-return [myReturnValue];}
 export async function CURRENT_MOVE_BOT2(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT2");
 return [myReturnValue]; }
 export async function CURRENT_MOVE_BOT3(myReturnValue)       { 
