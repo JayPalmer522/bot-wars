@@ -11,7 +11,7 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
-import { addLogEntry, clearLog } from "../store/battleLogSlice";
+import { addLogEntry, clearLog, setCombatRecord } from "../store/battleLogSlice";
 import { BEGIN_COMBAT, SHOW_COMBAT_RECORD } from "../utils/Combat";
 import { db } from "../db/db";
 
@@ -33,7 +33,7 @@ export default function CombatScreen() {
   const [maxGold, setMaxGold] = useState("No limits");
   const [maxWeight, setMaxWeight] = useState("No limits");
   const [maxPower, setMaxPower] = useState("No limits");
-  const [combatRecord, setCombatRecord] = useState([]);
+  const [combatRecord, setLocalCombatRecord] = useState([]);
 
   const limits = [
     "No limits",
@@ -71,10 +71,10 @@ export default function CombatScreen() {
     const result = await BEGIN_COMBAT(army1Data.id, army2Data.id, settings);
 
     if (result.success) {
-      setCombatRecord(result.combatRecord || []);
+      setLocalCombatRecord(result.combatRecord || []);
       dispatch(clearLog());
-      dispatch(addLogEntry("Battle initialized with ID: " + result.battleId));
-      // TODO: Call START_COMBAT or other functions
+      dispatch(addLogEntry("Battle ID: " + result.battleId));
+      dispatch(setCombatRecord(result.combatRecord || []));
       navigate("/results");
     } else {
       alert(result.message);

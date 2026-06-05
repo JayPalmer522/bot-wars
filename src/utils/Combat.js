@@ -1,149 +1,330 @@
 /**
- * Combat.js
- *
- * Handles all combat simulation logic, turn-based mechanics, and battle calculations.
+ * Combat.js — Battle simulation engine for BOT WARS
  */
-
-//import db from "../db"; // missing or wrong path
 import { db } from "../db/db";
-
-//import { db } from "../db/db";
 
 export let SHOW_COMBAT_RECORD = "TRUE";
 
-// Extract component name from a full description string.
-// e.g. "Micro-bot = BF 10 slots, 10 ND..." → "Micro-bot"
-function extractComponentName(descriptionString) {
-  return descriptionString?.split(" = ")[0]?.trim() || "";
+// ─── Logging helpers ──────────────────────────────────────────────────────────
+
+function logInfo(COMBAT_RECORD, msg) {
+  const line = `[INFO] ${msg}`;
+  console.log(line);
+  if (COMBAT_RECORD) COMBAT_RECORD.push(line);
 }
 
-/**
- * BEGIN_COMBAT
- * 
- * This function looks at the 2 armies named in the two textboxes on the
- * COMBAT_SCREEN, and searches for those 2 armies in the database. Then it goes
- * through each and gets the names of the Bots in the Army Database for 
- * army1Id (name of first army) and army2Id (name of second army), and goes 
- * to the Bots Database to get those Bots and add the data of each bot into an 
- * objects bots1 and bots2.
- *
- * After this is done, all needed data is gotten from the Army and Bots
- * Databases. There is still a Components Database where date for specific 
- * components, like weapon damage and scanner ranges, may be acquired. 
- *
- * The Combat settings (maxGold, maxWeight, maxPower, etc.) are used only to insure that these values are able to be listed on the RESULTS_SCREEN.
- * 
- * These objects (bots1 and bots2) are passed to the function 
- * CREATE_ALL_BOTS_IN_COMBAT_LIST, which returns ALL_BOTS_IN_COMBAT_LIST.
- * 
- * The BEGIN_COMBAT function also creates the COMBAT_RECORD object. The  
- * BEGIN_COMBAT logs the Settings Data (maxGold, etc.). All commands for the
- * 3rd stage of the game (Animations) are logged to COMBAT_RECORD.
- * 
- * After this, the function BEGIN_COMBAT calls the function
- * CREATE_ALL_BOTS_IN_COMBAT_LIST, which makes the main object for the game.
- * 
- * After this, the function BEGIN_COMBAT calls the function
- * MAIN_COMBAT_LOOP, passing to it the ALL_BOTS_IN_COMBAT_LIST.
- * 
- * The function BEGIN_COMBAT MUST ALSO PASS THE VALUE OF COMBAT_RECORD to 
- * the function MAIN_COMBAT_LOOP!!!!
- *
- * After the combat, the function MAIN_COMBAT_LOOP calls the logs the victory
- * and ratings of the player(s) in the PROFILES database.
- *
- * After the combat, the function MAIN_COMBAT_LOOP calls the ANIMATION process
- * and let's the player watch the game. 
- *
- * In the end, the function MAIN_COMBAT_LOOP calls the RESULTS_SCREEN after 
- * the animation is complete.
- * 
- */
-export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
-  console.log("...Function BEGIN_COMBAT End...");
+function logError(COMBAT_RECORD, msg, error) {
+  const detail = error?.message ?? String(error ?? "");
+  const line = `[ERROR] ${msg}${detail ? ": " + detail : ""}`;
+  console.error(line, error ?? "");
+  if (COMBAT_RECORD) COMBAT_RECORD.push(line);
+}
 
+// ─── Stat extractors ──────────────────────────────────────────────────────────
+
+function extractComponentName(desc) {
+  return desc?.split(" = ")[0]?.trim() || "";
+}
+
+function extractND(desc) {
+  const m = desc?.match(/(\d+)\s+ND/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractAD(desc) {
+  const m = desc?.match(/(\d+)\s+AD/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractSlots(desc) {
+  const after = desc?.split(" = ")[1] || "";
+  const m = after.match(/(\d+)\s+slots?/i);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractPO(desc) {
+  const m = desc?.match(/(\d+)\s+PO/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractWeight(desc) {
+  const m = desc?.match(/(\d+)\s+weight/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractCost(desc) {
+  const m = desc?.match(/(\d+)\s+cost/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractPC(desc) {
+  const m = desc?.match(/(\d+)\s+PC/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractWD(desc) {
+  const m = desc?.match(/(\d+)\s+WD/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractWR(desc) {
+  const m = desc?.match(/(\d+)\s+WR/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractBombWD1(desc) {
+  const m = desc?.match(/(\d+),\d+\s+WD/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractBombWD2(desc) {
+  const m = desc?.match(/\d+,(\d+)\s+WD/);
+  return m ? parseInt(m[1]) : 0;
+}
+
+function extractSensorRange(desc) {
+  const m = desc?.match(/in\s+(\d+)\s+range/i);
+  return m ? parseInt(m[1]) : 1;
+}
+
+function extractSensorTargets(desc) {
+  const m = desc?.match(/(?:Max\s+(\d+)|(\d+)\s+Max)\s+targets?/i);
+  return m ? parseInt(m[1] || m[2]) : 1;
+}
+
+// ─── Grid helpers ─────────────────────────────────────────────────────────────
+
+// Direction offsets on 0-based 100-cell (10×10) index array
+const DIR_OFFSET = {
+  N: -10, NE: -9, E: 1,  SE: 11,
+  S:  10, SW:  9, W: -1, NW: -11,
+};
+
+// 90° clockwise rotation
+const TURN_RIGHT_MAP = {
+  N: "E",  NE: "SE", E: "S",  SE: "SW",
+  S: "W",  SW: "NW", W: "N",  NW: "NE",
+};
+
+// 90° counter-clockwise (cardinals 90° CCW; diagonals flip 180° — original game design)
+const TURN_LEFT_MAP = {
+  N: "W",  NE: "SW", E: "N",  SE: "NW",
+  S: "E",  SW: "NE", W: "S",  NW: "SE",
+};
+
+// 45° clockwise
+const VEER_RIGHT_MAP = {
+  N: "NE", NE: "E",  E: "SE", SE: "S",
+  S: "SW", SW: "W",  W: "NW", NW: "N",
+};
+
+// 45° counter-clockwise
+const VEER_LEFT_MAP = {
+  N: "NW", NW: "W",  W: "SW", SW: "S",
+  S: "SE", SE: "E",  E: "NE", NE: "N",
+};
+
+// Returns true if moving from fromIndex to toIndex is within grid bounds (no column wrap)
+function isValidMove(fromIndex, toIndex) {
+  if (toIndex < 0 || toIndex >= 100) return false;
+  return Math.abs((fromIndex % 10) - (toIndex % 10)) <= 1;
+}
+
+// Find the 0-based index of a bot by its combatBotNumber string
+function findBotIndex(GAME_MAP_BOTS, botId) {
+  return GAME_MAP_BOTS.findIndex(cell => cell === String(botId));
+}
+
+// ─── CHECK_BOT_TOTALS (used by BotWorkshopScreen) ────────────────────────────
+
+export function CHECK_BOT_TOTALS(frame, engine, computer, armor, sensor, weaponMaster, weaponSecondary, weaponBomb) {
+  const frameCapacity = extractSlots(frame);
+
+  const slotsUsed =
+    extractSlots(engine) + extractSlots(computer) + extractSlots(armor) +
+    extractSlots(sensor) + extractSlots(weaponMaster) +
+    extractSlots(weaponSecondary) + extractSlots(weaponBomb);
+
+  const totalWeight =
+    extractWeight(frame) + extractWeight(engine) + extractWeight(computer) +
+    extractWeight(armor) + extractWeight(sensor) + extractWeight(weaponMaster) +
+    extractWeight(weaponSecondary) + extractWeight(weaponBomb);
+
+  const totalGold =
+    extractCost(frame) + extractCost(engine) + extractCost(computer) +
+    extractCost(armor) + extractCost(sensor) + extractCost(weaponMaster) +
+    extractCost(weaponSecondary) + extractCost(weaponBomb);
+
+  const totalPower =
+    extractPC(sensor) + extractPC(weaponMaster) + extractPC(weaponSecondary);
+
+  const enginePO = extractPO(engine);
+  // Engine tiers 1-3 → move 1, 4-6 → move 2, 7-9 → move 3
+  const move = Math.ceil(enginePO / 3000);
+
+  const slotsDisplay = `${slotsUsed}/${frameCapacity}`;
+  const slotsColor = slotsUsed > frameCapacity ? "red" : "black";
+
+  return {
+    slotsDisplay,
+    slotsColor,
+    totalWeight: totalWeight.toString(),
+    totalGold: totalGold.toString(),
+    totalPower: totalPower.toString(),
+    move: move.toString(),
+  };
+}
+
+// ─── Combat stats lookup ──────────────────────────────────────────────────────
+
+function buildBotStatsMap(ALL_BOTS_IN_COMBAT_LIST) {
+  const map = {};
+  for (const bot of ALL_BOTS_IN_COMBAT_LIST) {
+    map[bot.combatBotNumber] = {
+      armor:         extractND(bot.frame) + extractAD(bot.armor),
+      masterWD:      extractWD(bot.weaponMaster),
+      masterWR:      extractWR(bot.weaponMaster),
+      secondaryWD:   extractWD(bot.weaponSecondary),
+      secondaryWR:   extractWR(bot.weaponSecondary),
+      bombWD1:       extractBombWD1(bot.weaponBomb),
+      bombWD2:       extractBombWD2(bot.weaponBomb),
+      movement:      parseInt(bot.move) || 1,
+      sensorRange:   extractSensorRange(bot.sensor),
+      sensorTargets: extractSensorTargets(bot.sensor),
+      army:          bot.army,
+    };
+  }
+  return map;
+}
+
+// ─── Orders lists loader ──────────────────────────────────────────────────────
+
+async function loadAllOrdersLists(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
+  const map = {};
+  const seen = new Set();
+  for (const bot of ALL_BOTS_IN_COMBAT_LIST) {
+    const id = bot.ordersListId;
+    if (id == null || seen.has(id)) continue;
+    seen.add(id);
+    try {
+      const list = await db.orderLists.get(id);
+      if (list) {
+        map[id] = list;
+        logInfo(COMBAT_RECORD, `Loaded orders list id=${id} "${list.name}" (${list.commands.length} commands)`);
+      } else {
+        logError(COMBAT_RECORD, `Orders list id=${id} not found in DB`);
+      }
+    } catch (error) {
+      logError(COMBAT_RECORD, `Failed to load orders list id=${id}`, error);
+    }
+  }
+  return map;
+}
+
+// ─── Win / draw resolution ────────────────────────────────────────────────────
+
+function checkWinCondition(ALL_BOTS_IN_COMBAT_LIST, deadBotIds) {
+  const army1Alive = ALL_BOTS_IN_COMBAT_LIST.filter(b => b.army === 1 && !deadBotIds.has(String(b.combatBotNumber)));
+  const army2Alive = ALL_BOTS_IN_COMBAT_LIST.filter(b => b.army === 2 && !deadBotIds.has(String(b.combatBotNumber)));
+
+  if (army1Alive.length === 0 && army2Alive.length === 0) {
+    return { gameOver: true, message: "Both armies destroyed simultaneously — Both Armies Lose!" };
+  }
+  if (army1Alive.length === 0) {
+    return { gameOver: true, message: `Victory to Army 2! Army 1 destroyed. Army 2 survivors: ${army2Alive.length} bot(s).` };
+  }
+  if (army2Alive.length === 0) {
+    return { gameOver: true, message: `Victory to Army 1! Army 2 destroyed. Army 1 survivors: ${army1Alive.length} bot(s).` };
+  }
+  return { gameOver: false };
+}
+
+function resolveDraw(ALL_BOTS_IN_COMBAT_LIST, deadBotIds, GAME_MAP_BOTS, GAME_MAP_DAMAGE) {
+  const army1Alive = ALL_BOTS_IN_COMBAT_LIST.filter(b => b.army === 1 && !deadBotIds.has(String(b.combatBotNumber)));
+  const army2Alive = ALL_BOTS_IN_COMBAT_LIST.filter(b => b.army === 2 && !deadBotIds.has(String(b.combatBotNumber)));
+  const c1 = army1Alive.length, c2 = army2Alive.length;
+
+  if (c1 === 0 && c2 === 0) {
+    return "50 consecutive turns with no damage — Both Armies Lose! All bots destroyed.";
+  }
+
+  if (c1 !== c2) {
+    const winner = c1 > c2 ? 1 : 2;
+    const wc = winner === 1 ? c1 : c2;
+    const lc = winner === 1 ? c2 : c1;
+    return `50 consecutive turns with no damage — Army ${winner} wins! Army ${winner}: ${wc} bot(s), Army ${winner === 1 ? 2 : 1}: ${lc} bot(s).`;
+  }
+
+  // Equal bot counts — compare total remaining HP
+  const sumHp = (aliveList) =>
+    aliveList.reduce((sum, b) => {
+      const idx = GAME_MAP_BOTS.findIndex(cell => cell === String(b.combatBotNumber));
+      return sum + (idx !== -1 ? (parseInt(GAME_MAP_DAMAGE[idx]) || 0) : 0);
+    }, 0);
+
+  const hp1 = sumHp(army1Alive), hp2 = sumHp(army2Alive);
+
+  if (hp1 === hp2) {
+    return `50 consecutive turns with no damage — Tie! Both armies have ${c1} bot(s) and equal remaining HP (${hp1}).`;
+  }
+
+  const winner = hp1 > hp2 ? 1 : 2;
+  const winHp  = winner === 1 ? hp1 : hp2;
+  const loseHp = winner === 1 ? hp2 : hp1;
+  return `50 consecutive turns with no damage — Army ${winner} is the Marginal Winner! Both armies: ${c1} bot(s), HP: Army ${winner} ${winHp} vs Army ${winner === 1 ? 2 : 1} ${loseHp}.`;
+}
+
+// ─── BEGIN_COMBAT ─────────────────────────────────────────────────────────────
+
+export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
   SHOW_COMBAT_RECORD = "TRUE";
-  console.log(`BEGIN_COMBAT: Army1=${army1Id}, Army2=${army2Id}`);
+  const COMBAT_RECORD = [];
 
   try {
+    logInfo(COMBAT_RECORD, `BEGIN_COMBAT — Army1 id=${army1Id}, Army2 id=${army2Id}`);
+
     const army1 = await db.armies.get(army1Id);
     const army2 = await db.armies.get(army2Id);
 
     if (!army1 || !army2) {
-      return { success: false, message: "One or both armies not found." };
+      logError(COMBAT_RECORD, `Army not found — army1=${!!army1}, army2=${!!army2}`);
+      return { success: false, message: "One or both armies not found.", combatRecord: COMBAT_RECORD };
     }
 
-    const bots1 = await Promise.all(army1.botIds.map(id => db.bots.get(id)));
-    const bots2 = await Promise.all(army2.botIds.map(id => db.bots.get(id)));
+    logInfo(COMBAT_RECORD, `Armies loaded — "${army1.name}" vs "${army2.name}"`);
 
-    const COMBAT_RECORD = [];
+    const bots1 = (await Promise.all(army1.botIds.map(id => db.bots.get(id)))).filter(Boolean);
+    const bots2 = (await Promise.all(army2.botIds.map(id => db.bots.get(id)))).filter(Boolean);
+
+    logInfo(COMBAT_RECORD, `Bots loaded — Army1: ${bots1.length} bots, Army2: ${bots2.length} bots`);
+
     COMBAT_RECORD.push({
-      date: new Date().toLocaleDateString(),
+      date:               new Date().toLocaleDateString(),
       maxGoldSelection:   settings.maxGoldSelection   || "No limits",
       maxWeightSelection: settings.maxWeightSelection || "No limits",
       maxPowerSelection:  settings.maxPowerSelection  || "No limits",
-      playerName: settings.playerName || "Unknown Player",
-      army1Name: army1.name,
-      army2Name: army2.name,
+      playerName:         settings.playerName         || "Unknown Player",
+      army1Name:          army1.name,
+      army2Name:          army2.name,
     });
 
     const ALL_BOTS_IN_COMBAT_LIST = CREATE_ALL_BOTS_IN_COMBAT_LIST(bots1, bots2);
+    logInfo(COMBAT_RECORD, `Combat order set — ${ALL_BOTS_IN_COMBAT_LIST.length} bots total, first turn: Army ${ALL_BOTS_IN_COMBAT_LIST[0]?.army}`);
 
-    const battleState = {
-      battleId: `battle_${Date.now()}`,
-      SHOW_COMBAT_RECORD,
-      COMBAT_RECORD,
-      army1: { ...army1, bots: bots1, aliveCount: bots1.length },
-      army2: { ...army2, bots: bots2, aliveCount: bots2.length },
-      ALL_BOTS_IN_COMBAT_LIST,
-      currentTurn: 0,
-      currentArmy: 1,
-      battleLog: [],
-      settings,
-      isActive: true,
-    };
-    console.log(".COMBAT_RECORD:", JSON.stringify(COMBAT_RECORD));
-
-    console.log(".ALL_BOTS_IN_COMBAT_LIST:", JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
-
-   const ALL_ORDERS_LISTS = CREATE_ALL_ORDERS_LISTS(ALL_BOTS_IN_COMBAT_LIST);
-	
-	
-    console.log(`Combat initialized: ${battleState.battleId}`);
-
+    const battleId = `battle_${Date.now()}`;
     await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 
-
-console.log("... JAYTEST 4 ...");	
-  dumpDB();
-
-db.orderLists.toArray().then(console.log);
-
-db.orderLists.toArray().then(console.log);
-
-db.bots.toArray().then(console.log);
- 
-db.armies.toArray().then(console.log);
-
-console.log("... JAYTEST 5 ...");
-  console.log("...Function BEGIN_COMBAT End...");
-
-    return { success: true, battleId: battleState.battleId, combatRecord: COMBAT_RECORD };
+    logInfo(COMBAT_RECORD, `BEGIN_COMBAT complete — battleId: ${battleId}`);
+    return { success: true, battleId, combatRecord: COMBAT_RECORD };
   } catch (error) {
-    console.error("BEGIN_COMBAT error:", error);
-    return { success: false, message: "Failed to initialize combat." };
+    logError(COMBAT_RECORD, "BEGIN_COMBAT fatal error", error);
+    return { success: false, message: "Failed to initialize combat.", combatRecord: COMBAT_RECORD };
   }
 }
 
-/**
- * CREATE_ALL_BOTS_IN_COMBAT_LIST
- *
- * Merges both army bot lists into a single interleaved list in random order.
- * Randomly decides which army goes first.
- */
-export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
-			console.log("...Function CREATE_ALL_BOTS_IN_COMBAT_LIST Start...");
+// ─── CREATE_ALL_BOTS_IN_COMBAT_LIST ──────────────────────────────────────────
 
+export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
   const firstArmy = Math.floor(Math.random() * 2) + 1;
 
   const shuffle = (arr) => {
@@ -155,1163 +336,613 @@ export function CREATE_ALL_BOTS_IN_COMBAT_LIST(army1Bots = [], army2Bots = []) {
     return a;
   };
 
-  const shuffledArmy1 = shuffle(army1Bots);
-  const shuffledArmy2 = shuffle(army2Bots);
-
+  const s1 = shuffle(army1Bots);
+  const s2 = shuffle(army2Bots);
   const allBots = [];
-  const maxLength = Math.max(shuffledArmy1.length, shuffledArmy2.length);
+  const maxLen = Math.max(s1.length, s2.length);
 
-  for (let i = 0; i < maxLength; i++) {
+  for (let i = 0; i < maxLen; i++) {
     if (firstArmy === 1) {
-      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
-      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
+      if (i < s1.length) allBots.push({ ...s1[i], army: 1 });
+      if (i < s2.length) allBots.push({ ...s2[i], army: 2 });
     } else {
-      if (i < shuffledArmy2.length) allBots.push({ ...shuffledArmy2[i], army: 2 });
-      if (i < shuffledArmy1.length) allBots.push({ ...shuffledArmy1[i], army: 1 });
+      if (i < s2.length) allBots.push({ ...s2[i], army: 2 });
+      if (i < s1.length) allBots.push({ ...s1[i], army: 1 });
     }
   }
-  console.log("...Function CREATE_ALL_BOTS_IN_COMBAT_LIST END...");
-  return allBots.map((bot, index) => ({
-    ...bot,
-    combatBotNumber: bot.botNumber || index + 1,
-  }));
+
+  return allBots.map((bot, index) => ({ ...bot, combatBotNumber: index + 1 }));
 }
 
-//////////////////////////////
-//////////////////////////////
-//////////////////////////////
-//////////////////////////////
+// ─── STARTING_MAP_SQUARES ─────────────────────────────────────────────────────
 
-async function CREATE_ALL_ORDERS_LISTS(ALL_BOTS_IN_COMBAT_LIST) {
-  console.log("...Function CREATE_ALL_ORDERS_LISTS Start...");
-var ALL_ORDERS_TEMP = [];
-  
-var xxxTest = db.orderLists.toArray().then(console.log);
-console.log("xxxTest");
-console.log(xxxTest);
-var ids = [0];
+export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, botStatsMap) {
+  logInfo(null, "STARTING_MAP_SQUARES start");
 
-console.log("DonewithTesting");
-  
-console.log("... JAYTEST 7 ...");
-  var OrdersLitstIDs = "";
-  var TestCount = 0;
-  var idsCount = 0;
-console.log("... JAYTEST 8 ...");
-///// THIS SECTION GETS ALL THE ORDERS LISTS ID NUMBERS!!!!!!!
-  for (var Pcount = 0; Pcount < ALL_BOTS_IN_COMBAT_LIST.length; Pcount++){
-	let CURRENT_BOT = ALL_BOTS_IN_COMBAT_LIST[Pcount];
-    const ALL_ORDERS_LISTS = [];
-	var startParse = "ordersListId";
-	var endParse = "slotsUsed";
-	var strParse = JSON.stringify(CURRENT_BOT);
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-//	console.log("strParseReturnXXX: ");
-//	console.log(strParseReturn);
-///// THIS SECTION STRIPS NON-NUMERIC CHARACTERS!!!!!!!
-	let strParseReturn2 = strParseReturn.slice(2);
-//	console.log("strParseReturn2YYY: ");
-//	console.log(strParseReturn2);
-	var OrdersListID = strParseReturn2.slice(0, -2); 
-//	console.log(" OrdersListID: --OrdersListID--" + OrdersListID + "----");
-//	console.log("OrdersListIDXXX: ");
-//	console.log(OrdersListID);	
-//	console.log("... JAYTEST 10 ...");
-///// THIS SECTION STRIPS OUT DUPLICATE NUMBERS!!!!!!!
-	if (OrdersListID != "undefined"){
-//		console.log("OrdersListIDYYY: ");
-//		console.log(OrdersListID);
-//		console.log("OrdersListID != undefined");
-		if (OrdersLitstIDs.includes(OrdersListID)){
-		} else {
-//		console.log("--- else ---");
-//			console.log("OrdersListIDZZZ: ");
-//			console.log(OrdersListID);
-/////////////			OrdersListID = Number(OrdersListID); /////////
+  // Whichever army goes first in turn order starts on the LEFT facing East.
+  // The other army starts on the RIGHT facing West.
+  const leftArmyNum = ALL_BOTS_IN_COMBAT_LIST[0]?.army ?? 1;
 
-			Number(OrdersListID); /////////
-//			console.log("OrdersListIDJJJ: ");
-//			console.log(OrdersListID);
-			ids[idsCount] = [OrdersListID];
-//			ALL_ORDERS_TEMP[idsCount].push(OrdersListID);
-            Number(OrdersListID);
-			ALL_ORDERS_TEMP[idsCount] = OrdersListID;
-//console.log("ALL_ORDERS_TEMP[idsCount]");
-//console.log(ALL_ORDERS_TEMP[idsCount]);
-//console.log("JAYTEST 66");
+  const LEFT_SPACES  = [1,2,11,12,21,22,31,32,41,42,51,52,61,62,71,72,81,82,91,92];
+  const RIGHT_SPACES = [9,10,19,20,29,30,39,40,49,50,59,60,69,70,79,80,89,90,99,100];
 
-			idsCount++;
-			TestCount++;
+  const BASIC_MAP_NUMBERS = Array.from({ length: 100 }, (_, i) => i + 1);
+  const GAME_MAP_BOTS     = Array(100).fill("0");
+  const GAME_MAP_BULLETS  = Array(100).fill(0);
+  const GAME_MAP_FACING   = Array(100).fill("0");
+  const GAME_MAP_DAMAGE   = Array(100).fill("0");
 
-			OrdersLitstIDs = OrdersLitstIDs + OrdersListID;
-//			console.log("OrdersListID: ");
-//			console.log(OrdersListID);
-//			console.log(" OrdersLitstIDs: ");
-//			console.log(OrdersLitstIDs);
-		}
-	}
-  }//for
-  
-console.log("ALL_ORDERS_TEMP: ");
-console.log(ALL_ORDERS_TEMP[0]);
-console.log(ALL_ORDERS_TEMP[1]);
-console.log(ALL_ORDERS_TEMP[2]);
-///// THIS SECTION CONVERTS ALL STRINGS TO NUMBERS!!!!!!!
- 
-console.log(" YYYYYYYYYYYYYYYYYYYY");	  
-//console.log(ALL_ORDERS_TEMP);
-console.log(!isNaN(ALL_ORDERS_TEMP[0]));
-console.log(!isNaN(ALL_ORDERS_TEMP[1]));
-console.log(!isNaN(ALL_ORDERS_TEMP[2]));
-console.log(isNaN(ALL_ORDERS_TEMP[0]));
-console.log(isNaN(ALL_ORDERS_TEMP[1]));
-console.log(isNaN(ALL_ORDERS_TEMP[2]));
-///Number(ids); /////////
-//ids = ids.map(x => Number(x.replace(/"/g,"")));
-console.log("... JAYTEST FUCK!!!! ...");
-//ALL_ORDERS_TEMP = ALL_ORDERS_TEMP.map(x => Number(x.replace(/"/g,"")));
-console.log("stringify(ALL_ORDERS_TEMP)");
-console.log(JSON.stringify(ALL_ORDERS_TEMP));
+  let leftCount = 0, rightCount = 0;
 
-//var TEST666 = ("["+ids[0]+","+ids[1]+","+ids[2]+"]);
-//var TEST666 = [1,2,3,4,5,];
-//var TEST666 = "[1,2,3,4,5,]";
-//var lists = await loadOrdersLists(TEST666); // BAD!
-var lists = await loadOrdersLists([1,2,3,4,5]); //// WORKS!!!!!
-//var lists = await loadOrdersLists(ALL_ORDERS_TEMP); //????????
-///////////////// CALL TO GET COMMANDS ////////////////////////
-//const lists = await loadOrdersLists(TEST666, ids); // BAD!
-//const lists = await loadOrdersLists(["1","2","3","4","5"]); // BAD!
-//const lists = await loadOrdersLists("["+ids[0]+","+ids[1]+","+ids[2]+"]); //BREAKS EVERYTHING!!!
-//const lists = await loadOrdersLists(ids); // BAD!
-console.log("BACK FROM FUNCTION!");
-console.log(lists);
-console.log(JSON.stringify(lists));
-console.log(lists[1].commands);
-console.log(lists[2].commands);
-console.log(lists[3].commands);
-//console.log(lists[4].commands);
-//console.log(lists[5].commands);
-///////////////// CALL TO GET COMMANDS ////////////////////////
+  ALL_BOTS_IN_COMBAT_LIST.forEach((bot) => {
+    const isLeft   = bot.army === leftArmyNum;
+    const spaces   = isLeft ? LEFT_SPACES : RIGHT_SPACES;
+    const idx      = isLeft ? leftCount++ : rightCount++;
+    if (idx >= spaces.length) return;
+    const arrayIdx = spaces[idx] - 1;
+    GAME_MAP_BOTS[arrayIdx]   = String(bot.combatBotNumber);
+    GAME_MAP_FACING[arrayIdx] = isLeft ? "E" : "W";
+    const stats = botStatsMap[bot.combatBotNumber];
+    GAME_MAP_DAMAGE[arrayIdx] = String(stats?.armor ?? 0);
+  });
 
-//  console.log(" result:");
-//  console.log(JSON.stringify(result));
-//const manager = await buildOrdersListsManager(OrdersLitstIDs);
-
-console.log("... JAYTEST 2 ...");
-
-  console.log(" OrdersLitstIDs7:");
-  console.log(OrdersLitstIDs);
-  
-console.log(JSON.stringify(manager));
-
-var ALL_ORDERS_LISTS = JSON.stringify(manager);
-
-console.log(ALL_ORDERS_LISTS);
-console.log(JSON.stringify(ALL_ORDERS_LISTS));
-
-
-var list2 = manager.getList(2);
-var commands2 = manager.getCommands(2);
-
-console.log(JSON.stringify(list2));
-console.log(JSON.stringify(commands2));
-console.log("... JAYTEST 3 ...");
-  
-  
-const count = OrdersLitstIDs.split(",").length;
-
-let commands = 3;//STUPID, but leave or it breaks!	
-let MyCountA = 1;
-let j = 6;
-console.log(".XXYYZZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
-MyCountA = console.log(".XXXXYYYYZZXZ: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1].length);//WORKS!!!
-			console.log("MyCountA");
-			console.log(MyCountA);	
-			console.log(" KKKKKKKKKKKKKKKKKK");	
-
- MyCountA = await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId).commands.length;
-			console.log(MyCountA);	
-			console.log(" KKKKKKKKKKKKKKKKKK");	
-
-		for (var Rcount = 0; Rcount < TestCount + TestCount; Rcount++){
-			console.log(" JJJJJJJJJJJJJJJJ");	
-			console.log(OrdersLitstIDs[Rcount]);
-const MY_CURRENT_COMMAND = (await db.orderLists.get(1)).commands[1]; 
-
-			console.log(MY_CURRENT_COMMAND);
-			Rcount++;
-		}
-
-  console.log("...Function CREATE_ALL_ORDERS_LISTS End...");
+  const placed = ALL_BOTS_IN_COMBAT_LIST.length;
+  logInfo(null, `STARTING_MAP_SQUARES end — ${placed} bots placed`);
+  return [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE];
 }
 
+// ─── MAIN_COMBAT_LOOP ─────────────────────────────────────────────────────────
 
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-
-async function TEMPloadOrdersLists(ids) {
-console.log("...Function loadOrdersLists(ids) Start...");
-  const idsLength = ids.length;
-console.log("ENTER FOR ...............................");
-  for (var idCountK = 0; idCountK < idsLength; idCountK++){
-console.log("Jay was tired of code that didnt work!");
-console.log(idCountK);
-  } ////// for ...
-
-	console.log("After await mmmmmmmmmmmmmmmm");
-  return result;
-} // End of Function ...
-
-
-
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-/////////////////////////////////////////
-
-async function loadOrdersListsJAY(ids) {
-console.log("...Function loadOrdersLists(ids) Start...");
-
-console.log(JSON.stringify(ids));
-  var result = {};
-  var idValue = 0;
-  var idsLength = ids.length;
-  var list = "";
-//console.log(ids[0]);
-//console.log(ids[1]);
-//console.log(ids[2]);
-console.log("idsLength");
-console.log(idsLength);
-//Number(idsLength);
-//console.log(!isNaN(idsLength));
-//console.log(isNaN(idsLength));
-console.log("ENTER FOR ...............................");
-  for (var idCountJ = 0; idCountJ < idsLength; idCountJ++){
-console.log("Jay was tired of code that didnt work!");
-console.log("idCountJ");
-console.log(idCountJ);
-console.log("idsLength");
-console.log(idsLength);
-//console.log(ids[0]);
-//console.log(ids[1]);
-//console.log(ids[2]);
-
-//console.log(zzzzzzzzzzzzzzzzz);
-//console.log(idValue);
-	  idValue = Number(ids[idCountJ]);
-
-//		list = await db.orderLists.name.commands.get(idValue); //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).name; //UNDEFINED!
-//      list = await db.orderLists.get(idValue).name.commands.Array; //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).name.commands; //BREAKS ALL!
-//      list = await db.orderLists.commands.get(idValue); //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).commands; //UNDEFINED!
-//      list = await db.orderLists.get(idValue).commands[1]; //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).id.commands; //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).name.commands[1]; //BREAKS ALL!
-//      list = await db.orderLists.get(idValue); //PARTIAL WORKS!
-//      list = await db.orderLists.get[idValue]/commands; //BREAKS ALL!
-//      list = await db.orderLists.get[idValue]; //UNDEFINED!
-//      list = await db.orderLists.get([idValue]); //UNDEFINED!
-//      list = await db.orderLists.get(idValue).Array; //UNDEFINED!
-//      list = await db.orderLists.get(idValue).Array[3]; //BREAKS ALL!
-//      list = await db.orderLists.get(idValue).commands.Array; //BREAKS ALL!
-      list = await db.orderLists.get(idValue); //PARTIAL WORKS!
-	console.log("Here's the value of list" );
-	console.log(list);
-	console.log("After await mmmmmmmmmmmmmmmm");
-//    result[idCountJ] = list;
-  } ////// for ...
-
-	console.log("After await nnnnnnnnnnnnnnn");
-  return result;
-} // End of Function ...
-
-
-
-
-
-
-
-async function loadOrdersLists(ids) {
-console.log("... function loadOrdersLists Start ...");
-  const result = {};
-  for (var id of ids) {
-console.log(id + " id BEFORE");
-	  Number(id);
-console.log(!isNaN(id));
-console.log(isNaN(id));
-console.log("Value of id: ");
-    var list = await db.orderLists.get(id).then (console.log("list: " + JSON.stringify(list))); 
-console.log(id + " id AFTER");
-    result[id] = list;
-  }
-console.log("... function loadOrdersLists End ...");
-  return result;
-} // End of Function ...
-
-
-
-
-
-
-
- 
-
-/**
- * MAIN_COMBAT_LOOP
- * ///////////////////////////////////////////////
- * Begins the battle simulation loop. 
- * MANUALLY CREATED BY JAY!
- * /////////////////////////////////////////////
- * The MAIN_COMBAT_LOOP function takes in the ALL_BOTS_IN_COMBAT_LIST. 
- * ////////////////////////////////////////////
- * The MAIN_COMBAT_LOOP function MUST TAKE IN COMBAT_RECORD, TOO! 
- *
- * Then it calls the function STARTING_MAP_SQUARES, passing to it the 
- * ALL_BOTS_IN_COMBAT_LIST, and takes the return of GAME_MAP_BOTS, where all 
- * 100 spaces (in order) are listed with a zero and and occupied starting locations have the ID number of the Bot starting there. This returns to the
- * function MAIN_COMBAT_LOOP the onject GAME_MAP_BOTS.
- *
- * The MAIN_COMBAT_LOOP function takes GAME_MAP_BOTS and then it creates a duplicate of this called 
- * MASTER_ALL_BOTS_IN_COMBAT_LIST, which it scrolls
- * through endlessly until the game is declared ended because of 
- * either of 2 conditions: one team has no Bots left in the  
- * ALL_BOTS_IN_COMBAT_LIST or more than 50 turns have passed with no Bot 
- * sustaining damage. 
- * 
- * For each Bot still alive (not on the DEAD_BOTS_LIST) the function 
- * MAIN_COMBAT_LOOP calls the function EXECUTE_BOT_ACTION, passing to it 
- * the ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, and COMBAT_RECORD.
- *
- * In the end, the function BEGIN_COMBAT after the combat 
- * is over, passing to it the COMBAT_RECORD. 
-*/ 
 export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
-		console.log("...Function MAIN COMBAT LOOP Start...");
-////////  Run STARTING_MAP_SQUARES /////////////////
-  const [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE] = STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-  console.log("Main Loop GAME_MAP_BOTS:" + GAME_MAP_BOTS); //Working here.
-//  console.log("GAME_MAP_SQUARES:" + GAME_MAP_SQUARES); //Working here.
-//		console.log(" JJJJJ: " + JSON.stringify(ALL_BOTS_IN_COMBAT_LIST));
+  logInfo(COMBAT_RECORD, "MAIN_COMBAT_LOOP start");
 
-  let TOO_MANY_TURNS = 0;
-  let BOT_IS_DESTROYED = ['41','42','43'];
-  let CURRENT_BOT_NUMBER = 0;
-	for (var j = 0; j < ALL_BOTS_IN_COMBAT_LIST.length; j++){
-//		console.log("..... Inside FOR .....");
-		let CURRENT_BOT = ALL_BOTS_IN_COMBAT_LIST[j];
+  try {
+    const botStatsMap = buildBotStatsMap(ALL_BOTS_IN_COMBAT_LIST);
+    logInfo(COMBAT_RECORD, `Bot stats built for ${Object.keys(botStatsMap).length} bots`);
 
+    const [, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE] =
+      STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, botStatsMap);
+    logInfo(COMBAT_RECORD, "Starting map squares placed");
 
-		if (BOT_IS_DESTROYED.includes(CURRENT_BOT_NUMBER) && TOO_MANY_TURNS <= 50)
-		  {
-//			  console.log("........... IF DUAL CONDITIONS  TRUE ...........");
-	  }else{ /// not true!!!
-			TOO_MANY_TURNS++;//
-			let commands = 3;//STUPID, but leave or it breaks!	
-console.log(".XXX: " + (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[j].ordersListId)).commands[1]);
+    const ordersListsMap = await loadAllOrdersLists(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+    logInfo(COMBAT_RECORD, `Orders lists loaded: ${Object.keys(ordersListsMap).length} unique lists`);
 
-//////////// Call EXECUTE_ORDERS_LIST ////////////////////
-			const MyOrders = EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE)
-		}//if BOT_IS_DESTROYED/TOO_MANY_TURNS <= 50
-	}//var j = 0 ALL_BOTS_IN_COMBAT_LIST.length j++
-//	 		Run function REMOVE_DESTROYED_BOTS.			  
-console.log("...Function MAIN COMBAT LOOP End...");
-  return { success: true };
+    const deadBotIds = new Set();
+    const acquiredTargetsMap = {};
+    let noRecentDamageRounds = 0;
+    let roundNumber = 0;
+    let gameOver = false;
+
+    while (roundNumber < 200 && !gameOver) {
+      roundNumber++;
+      COMBAT_RECORD.push(`Round ${roundNumber} begins.`);
+      let damageThisRound = false;
+
+      for (const CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST) {
+        if (deadBotIds.has(String(CURRENT_BOT.combatBotNumber))) continue;
+
+        try {
+          const result = await EXECUTE_ORDERS_LIST(
+            ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD,
+            noRecentDamageRounds, deadBotIds, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE,
+            ordersListsMap, botStatsMap, acquiredTargetsMap
+          );
+
+          if (result.damageDealt) damageThisRound = true;
+
+          for (const deadId of result.newDeadBots) {
+            deadBotIds.add(deadId);
+          }
+
+          const winCheck = checkWinCondition(ALL_BOTS_IN_COMBAT_LIST, deadBotIds);
+          if (winCheck.gameOver) {
+            logInfo(COMBAT_RECORD, winCheck.message);
+            gameOver = true;
+            break;
+          }
+        } catch (error) {
+          logError(COMBAT_RECORD, `Bot ${CURRENT_BOT.combatBotNumber} turn failed`, error);
+        }
+      }
+
+      if (!gameOver) {
+        noRecentDamageRounds = damageThisRound ? 0 : noRecentDamageRounds + 1;
+        if (noRecentDamageRounds >= 50) {
+          logInfo(COMBAT_RECORD, resolveDraw(ALL_BOTS_IN_COMBAT_LIST, deadBotIds, GAME_MAP_BOTS, GAME_MAP_DAMAGE));
+          gameOver = true;
+        }
+      }
+    }
+
+    logInfo(COMBAT_RECORD, `MAIN_COMBAT_LOOP end — ${roundNumber} round(s) played`);
+    return { success: true };
+  } catch (error) {
+    logError(COMBAT_RECORD, "MAIN_COMBAT_LOOP fatal error", error);
+    return { success: false };
+  }
 }
 
-
-
-
-
-
-/**
- * STARTING_MAP_SQUARES
- * 
- * Create a game map for Bot starting positions, with numbers for each space, 
- * numbers 1 - 100, and places Bot ID numbers where the Bot is and zero values
- * for each Space where there is no Bot. These values will be separated by
- * commas.
- * This function takes in the object ALL_BOTS_IN_COMBAT_LIST and returns the 
- * object GAME_MAP_BOTS.
- */
-export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
-    console.log("...Function STARTING_MAP_SQUARES Start...");
-
-let MyBotStarting = ['1','9','2','10','11','19','12','20','21','29','22','30','31','39','32','40','41','49','42','50','51','59','52','60','61','69','62','70','71','79','72','80','81','89','82','90','91','99','92','100'];
-
-console.log("...Funk 1...");
-	
-let botIndex = 0;
-var BotCount = 0;
-var BotID = "";
-var BotFlag = true;
-var FACING_DIR = "E";
-var STARTING_LOC = "'0'";
-var CURRENT_BOT = "'0'";
-var MY_BOT = "";
-var CURRENT_BOT_COUNT = 1;
-//var GAME_MAP_FACING = [];
-const GAME_MAP_BULLETS = [];
-const GAME_MAP_SQUARES = [];
-const GAME_MAP_DAMAGE = [];
-//const GAME_MAP_BOTS = [];
-const BASIC_MAP_NUMBERS = [];	
-const _MAP_NUMBERS = [];	
-
-
-///// Create BASIC_MAP_NUMBERS and GAME_MAP_BULLETS //////
-for (let k = 1; k <= 100; k++) {
-    BASIC_MAP_NUMBERS.push(k); /// BASIC_MAP_NUMBERS - SUCCESS!
-    GAME_MAP_BULLETS.push(0); /// BASIC_MAP_NUMBERS - SUCCESS!
-}// (let k = 1; #1 ...
-
-
-///////////// Create GAME_MAP_BOTS /////////////////
-
-const GAME_MAP_BOTS =  ["1","3","0","0","0","0","0","0","2","4","5","7","0","0","0","0","0","0","6","8","9","11","0","0","0","0","0","0","10","12","13","15","0","0","0","0","0","0","14","16","17","19","0","0","0","0","0","0","18","20","21","23","0","0","0","0","0","0","22","24","25","27","0","0","0","0","0","0","26","28","29","31","0","0","0","0","0","0","30","32","33","35","0","0","0","0","0","0","34","36","37","39","0","0","0","0","0","0","38","40"]
- 
- 
-//for (let k = 1; k <= 100; k++) {
-//	STARTING_LOC = JSON.stringify(k);
-//	if (MyBotStarting.includes(STARTING_LOC)){ // If a starting location ...
-//console.log("--kA-" + k + "--BotCount-" + BotCount + "--CURRENT_BOT_COUNT-" + CURRENT_BOT_COUNT + "--GAME_MAP_BOTS--");
-//		CURRENT_BOT_COUNT = JSON.stringify(CURRENT_BOT_COUNT);
-//		BotID = MyBotStarting[BotCount];
-//		GAME_MAP_BOTS.push(BotID);	
-//		BotCount++;
-//		CURRENT_BOT_COUNT++;
-//		}//if (MyBotStarting.includes(k)
-//	else {
-//		GAME_MAP_BOTS.push("0");
-//	}//else if (MyBotStarting.includes
-//}// for (let k = 0 ...
-
-
-////////////// Create GAME_MAP_FACING ////////////
-
-const GAME_MAP_FACING = ["E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W","E","E","0","0","0","0","0","0","W","W"];
-
-
-
-
-////////////// Create GAME_MAP_DAMAGE ////////////
-
-var strParse = "";
-var startParse = "";
-var endParse = "";
-var strParseReturn = "";
-var strParseReturn2 = "";
-var strFrame = "";
-var strArmor = "";
-var strArmor1 = "";
-var strArmor2 = "";
-var BOT_ARMOR = "";
-
-BotCount = 0;
-for (MY_BOT of GAME_MAP_BOTS)  {
-	if (MY_BOT == "0"){
-//console.log("-MY_BOT-" + MY_BOT + " ==  0");
-		GAME_MAP_DAMAGE.push("0");
-	} else { // if (MY_BOT == "0
-		BotCount++;
-		for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST) {
-			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-//console.log("strParse: " + strParse);			
-			startParse = "combatBotNumber";
-			endParse = "EndOfData";
-			strFrame = ParseString(strParse, startParse, endParse);
-			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-//console.log("strParse: " + strParse);			
-			startParse = "slots, ";
-			endParse = " ND,";
-			strArmor1 = ParseString(strParse, startParse, endParse);
-//console.log("--strArmor1--" + strArmor1);
-			startParse = "armor";
-			endParse = "sensor";
-			strArmor = ParseString(strParse, startParse, endParse);
-//console.log("--strArmor--" + strArmor);
-			startParse = "slots, ";
-			endParse = " AD,";
-			strArmor2 = ParseString(strArmor, startParse, endParse);
-//console.log("--strArmor2--" + strArmor2);
-			BOT_ARMOR = Number(strArmor1) + Number(strArmor2);
-//console.log("--BOT_ARMOR--" + BOT_ARMOR);
-
-//			strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-			startParse = "combatBotNumber";
-			endParse = "EndOfData";
-			strParseReturn = ParseString(strParse, startParse, endParse);
-			strParseReturn2 = strParseReturn.slice(2);
-			BotID = strParseReturn2.slice(0, -1); 
-//console.log("...--BotCount--" + BotCount + "--BotID--" + BotID + "----"); 
-//////MAP WITH ARMY ID ????
-//////MAP WITH Master Damage ????
-//////MAP WITH Secondary Damage ????
-			if (BotCount == BotID){
-				GAME_MAP_DAMAGE.push(JSON.stringify(BOT_ARMOR));
-			}//if (MY_BOT == BotID
-		}//for (CURRENT_BOT of ALL_BOTS_IN_COMBAT_LIST
-	}//else {if (MY_BOT == "0 
-}// for (CURRENT_BOT of	
-
-console.log("BASIC_MAP_NUMBERS:", JSON.stringify(BASIC_MAP_NUMBERS));
-console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_BULLETS:", JSON.stringify(GAME_MAP_BULLETS));
-console.log("GAME_MAP_FACING:", JSON.stringify(GAME_MAP_FACING));
-console.log("GAME_MAP_DAMAGE:", JSON.stringify(GAME_MAP_DAMAGE));
-
-console.log("...Function STARTING_MAP_SQUARES End...");
-
-	return [BASIC_MAP_NUMBERS, GAME_MAP_BOTS, GAME_MAP_BULLETS, GAME_MAP_FACING, GAME_MAP_DAMAGE];//GAME_MAP_SQUARES, 
-} // End of Function
-	
-
-
-/**
- * EXECUTE_ORDERS_LIST
- * 
- * This function is called by the function MAIN_COMBAT_LOOP, which passes
- * to it the objects CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS,
- * and the COMBAT_RECORD.
- * 
- * The EXECUTE_ORDERS_LIST gets the ORDERS_LIST from the Orders List Database 
- * for the CURRENT_BOT. Then it goes through each line of the ORDERS_LIST 
- * and executes a function for each command, passing all the needed objects.
- * 
- * Calls CURRENT_ACTIVATE_SCANNER sends CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, and COMBAT_RECORD. Returns CURRENT_BULLET_TARGET1 and 
- * CURRENT_BULLET_TARGET2.
- *
- * Calls CURRENT_MOVE_BOT1 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
- * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
- * 
- * Calls CURRENT_MOVE_BOT2 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
- * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
- * 
- * Calls CURRENT_MOVE_BOT3 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
- * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
- * 
- * Calls CURRENT_MOVE_BOT4 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
- * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
- * 
- * Calls CURRENT_MOVE_BOT5 passes CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST,
- * GAME_MAP_BOTS, and COMBAT_RECORD. Returns GAME_MAP_BOTS and COMBAT_RECORD. 
- * 
- * 
- * 
- * This function EXECUTE_ORDERS_LIST returns to the MAIN_COMBAT_LOOP, from 
- * which it came, and passes the objects ALL_BOTS_IN_COMBAT_LIST, 
- * GAME_MAP_BOTS, DEAD_BOTS_LIST, and the COMBAT_RECORD.
- * 
- */
-
-export async function EXECUTE_ORDERS_LIST(ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD, TOO_MANY_TURNS, BOT_IS_DESTROYED, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE) {
- console.log("...Function EXECUTE_ORDERS_LIST Start...");
-
-
- var TotalOfCommands = "";
- var EXECUTE_CURRENT_COMMAND = "";
- const strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
- const startParse = "combatBotNumber";
- const endParse = "EndOfData";
- const strParseReturn = ParseString(strParse, startParse, endParse);
- let strParseReturn2 = strParseReturn.slice(2);
- const BotID = strParseReturn2.slice(0, -1); 
- console.log("--BotID--" + BotID + "----");
-///// THIS SECTION STRIPS NON-NUMERIC CHARACTERS!!!!!!!
-	strParseReturn2 = strParseReturn.slice(2);
-	console.log("strParseReturn2LLL: ");
-	console.log(strParseReturn2);
-	var OrdersListID = strParseReturn2.slice(0, -2); 
-//	console.log(" OrdersListID: --OrdersListID--" + OrdersListID + "----");
-
-//const TotalOfCommands = (await db.orderLists.get(ALL_BOTS_IN_COMBAT_LIST[BotID].ordersListId)).commands.length;
-
-		for (var pcount = 0; pcount < 20; pcount++){
-			let MyCount = JSON.stringify(pcount);
-
-// EXECUTE_CURRENT_COMMAND = "Turn Right";
-EXECUTE_CURRENT_COMMAND = "Move Forward 1";
-
-
-
-
-console.log("TEST 21");
-console.log("..EXECUTE_CURRENT_COMMAND: " + EXECUTE_CURRENT_COMMAND);
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 1"){
-		console.log("...Call EXECUTE_CURRENT_COMMAND = Move Forward 1");
-		[GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE]=CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-		}
-
-/*
-The TypeError: object is not iterable error occurs because your code tried to loop over, spread, or destructure a standard JavaScript Object ({}) using a mechanism that only works on iterable data types like Array, Map, or Set. Standard objects do not implement the required Symbol.iterator method by default. Because this happened inside a (in promise) block, the error was triggered inside an asynchronous operation like an async/await function, a .then() block, or a network request handler.Common Root CausesCheck your code for the following four frequent mistakes:1. Array destructuring a plain objectYou used square brackets [] instead of curly braces {} when unpacking a returned object. This often happens with React hooks or API responses.Wrong: const [data, setData] = fetchUser(); (if fetchUser returns an object)Fix: const { data, setData } = fetchUser();2. Spreading a plain object into an arrayYou used the ... spread operator on an object inside array brackets.Wrong: const newArray = [...myObject];Fix: const newArray = [{ ...myObject }]; or const newArray = Object.values(myObject);3. Looping with for...ofYou used for...of instead of for...in to loop over an object's properties.Wrong: for (let item of myObject) { ... }Fix: for (let key in myObject) { ... } or for (let item of Object.values(myObject)) { ... }4. Invalid arguments in Promise.all or Object.fromEntries
-
-*/
-
-	if (EXECUTE_CURRENT_COMMAND == "Turn Left"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Left");
-		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Turn Right"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Turn Right");
-		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Veer Left"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Veer Left");
-		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Veer Right"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Veer Right");
-		[GAME_MAP_FACING, COMBAT_RECORD] = CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT);		
-		}
-
-
-	
-	if (EXECUTE_CURRENT_COMMAND == "Fire Master Weapon"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Master Weapon");
-		////////  Run Fire Master Weapon /////////////////
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Fire Seconday Weapon"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Fire Seconday Weapon");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "If Any Enemies in Range ..."){
-		console.log("Call EXECUTE_CURRENT_COMMAND = If Any Enemies in Range ...");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Activate Targeting Map"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Activate Targeting Map");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
-		[[GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE]] = CURRENT_MOVE_TOWARD_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 2"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 2");
-//		let myReturnValue = CURRENT_MOVE_BOT2(myReturnValue);
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT2(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 3"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 3");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT3(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		console.log("TEST 20");
-//		let myReturnValue = CURRENT_MOVE_BOT3(myReturnValue);		
-		}
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 4"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 4");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT4(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Forward 5"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Forward 5");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT5(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "If Your Armor is Below 300 ..."){
-		console.log("Call EXECUTE_CURRENT_COMMAND = If Your Armor is Below 300 ...");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = FIRE_MASTER_WEAPON(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Backward 1"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 1");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK1(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Backward 2"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 2");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK2(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move Backward 3"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move Backward 3");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = CURRENT_MOVE_BOT_BACK3(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-	if (EXECUTE_CURRENT_COMMAND == "Move toward located Enemy"){
-		console.log("Call EXECUTE_CURRENT_COMMAND = Move toward located Enemy");
-//		[GAME_MAP_BOTS, GAME_MAP_SQUARES] = MOVE_TOWARD_LOCATED_ENEMY(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
-		
-		}
-
-
-
-}//for (var p ....
-
-	
-
-console.log("...Function EXECUTE_ORDERS_LIST End...");
- 
- return [GAME_MAP_BOTS];
+// ─── EXECUTE_ORDERS_LIST ──────────────────────────────────────────────────────
+
+export async function EXECUTE_ORDERS_LIST(
+  ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD,
+  noRecentDamageTurns, deadBotIds, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE,
+  ordersListsMap, botStatsMap, acquiredTargetsMap = {}
+) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const ordersList = ordersListsMap[CURRENT_BOT.ordersListId];
+
+  if (!ordersList) {
+    logError(COMBAT_RECORD, `Bot ${botId} has no orders list (ordersListId=${CURRENT_BOT.ordersListId})`);
+    return { damageDealt: false, newDeadBots: [] };
+  }
+
+  const botSpace = findBotIndex(GAME_MAP_BOTS, botId) + 1;
+  logInfo(COMBAT_RECORD, `Bot ${botId} (army ${CURRENT_BOT.army}, "${CURRENT_BOT.name}") begins turn on space ${botSpace}`);
+
+  const commands = ordersList.commands;
+  let damageDealt = false;
+  const newDeadBots = [];
+
+  for (let i = 0; i < commands.length; i++) {
+    if (deadBotIds.has(botId)) break;
+
+    const cmd = commands[i];
+
+    if (cmd === "Move Forward 1") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+
+    } else if (cmd === "Move Forward 2") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+
+    } else if (cmd === "Move Forward 3") {
+      for (let s = 0; s < 3; s++)
+        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+
+    } else if (cmd === "Move Forward 4") {
+      for (let s = 0; s < 4; s++)
+        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+
+    } else if (cmd === "Move Forward 5") {
+      for (let s = 0; s < 5; s++)
+        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+
+    } else if (cmd === "Move Backward 1") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 1);
+
+    } else if (cmd === "Move Backward 2") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 2);
+
+    } else if (cmd === "Move Backward 3") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 3);
+
+    } else if (cmd === "Turn Right") {
+      [GAME_MAP_FACING, COMBAT_RECORD] =
+        await CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+
+    } else if (cmd === "Turn Left") {
+      [GAME_MAP_FACING, COMBAT_RECORD] =
+        await CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+
+    } else if (cmd === "Veer Right") {
+      [GAME_MAP_FACING, COMBAT_RECORD] =
+        await CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+
+    } else if (cmd === "Veer Left") {
+      [GAME_MAP_FACING, COMBAT_RECORD] =
+        await CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+
+    } else if (cmd === "Fire Master Weapon") {
+      const acquired = acquiredTargetsMap[botId] ?? [];
+      const r = fireMasterWeapon(
+        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+      );
+      if (r.damageDealt) damageDealt = true;
+      for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+
+    } else if (cmd === "Fire Seconday Weapon" || cmd === "Fire Secondary Weapon") {
+      const acquired = acquiredTargetsMap[botId] ?? [];
+      const r = fireSecondaryWeapon(
+        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+      );
+      if (r.damageDealt) damageDealt = true;
+      for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+
+    } else if (cmd === "Fire All") {
+      const acquired = acquiredTargetsMap[botId] ?? [];
+      // If 2 targets acquired, Master gets target[0] and Secondary gets target[1]
+      const r1 = fireMasterWeapon(
+        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+      );
+      for (const d of r1.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+      const r2 = fireSecondaryWeapon(
+        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[1] ?? null
+      );
+      if (r1.damageDealt || r2.damageDealt) damageDealt = true;
+      for (const d of r2.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+
+    } else if (cmd === "Activate Targeting Map") {
+      const tmIdx   = findBotIndex(GAME_MAP_BOTS, botId);
+      const tmStats = botStatsMap[CURRENT_BOT.combatBotNumber];
+      const tmRange = tmStats?.sensorRange ?? 1;
+      const maxTargets = tmStats?.sensorTargets ?? 1;
+      const targets = scanForEnemies(tmIdx, CURRENT_BOT.army, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, tmRange);
+      const acquired = targets.slice(0, maxTargets);
+      acquiredTargetsMap[botId] = acquired;
+      if (acquired.length > 0) {
+        const spaces = acquired.map(i => i + 1).join(", ");
+        COMBAT_RECORD.push(`Bot ${botId} activates targeting map — ${acquired.length} target(s) acquired in range ${tmRange} at space(s): ${spaces}.`);
+      } else {
+        COMBAT_RECORD.push(`Bot ${botId} activates targeting map — no targets found in range ${tmRange}.`);
+      }
+
+    } else if (cmd === "If Any Enemies in Range ...") {
+      // Conditional: scan for enemies; if none, skip the next command
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      const stats = botStatsMap[CURRENT_BOT.combatBotNumber];
+      const range = stats?.sensorRange ?? 1;
+      const hasEnemy = scanForEnemies(idx, CURRENT_BOT.army, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, range).length > 0;
+      COMBAT_RECORD.push(`Bot ${botId} scans: enemies in range = ${hasEnemy}.`);
+      if (!hasEnemy) i++; // skip next command
+
+    } else if (cmd === "Move toward located Enemy") {
+      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+        await CURRENT_MOVE_TOWARD_ENEMY(
+          CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+          COMBAT_RECORD, botStatsMap
+        );
+
+    } else if (cmd === "If Movement Blocked by Enemy ...") {
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      const facing = GAME_MAP_FACING[idx];
+      const offset = DIR_OFFSET[facing] ?? 0;
+      const nextIdx = idx + offset;
+      const blocked = nextIdx >= 0 && nextIdx < 100 &&
+        isValidMove(idx, nextIdx) && GAME_MAP_BOTS[nextIdx] !== "0";
+      COMBAT_RECORD.push(`Bot ${botId} checks: blocked by enemy = ${blocked}.`);
+      if (!blocked) i++;
+
+    } else if (cmd === "If Movement Blocked by Ally ...") {
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      const facing = GAME_MAP_FACING[idx];
+      const offset = DIR_OFFSET[facing] ?? 0;
+      const nextIdx = idx + offset;
+      const blockedByAlly = nextIdx >= 0 && nextIdx < 100 &&
+        isValidMove(idx, nextIdx) && (() => {
+          const cell = GAME_MAP_BOTS[nextIdx];
+          if (cell === "0") return false;
+          const blocker = ALL_BOTS_IN_COMBAT_LIST.find(b => String(b.combatBotNumber) === cell);
+          return blocker?.army === CURRENT_BOT.army;
+        })();
+      COMBAT_RECORD.push(`Bot ${botId} checks: blocked by ally = ${blockedByAlly}.`);
+      if (!blockedByAlly) i++;
+
+    } else if (cmd.startsWith("If Your Armor is Below ")) {
+      const threshold = parseInt(cmd.replace("If Your Armor is Below ", "")) || 0;
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      const currentHp = parseInt(GAME_MAP_DAMAGE[idx]) || 0;
+      const armorLow = currentHp < threshold;
+      COMBAT_RECORD.push(`Bot ${botId} checks armor (${currentHp}) below ${threshold}: ${armorLow}.`);
+      if (!armorLow) i++;
+
+    } else if (cmd === "If Facing Off-Map ...") {
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      const facing = GAME_MAP_FACING[idx];
+      const offset = DIR_OFFSET[facing] ?? 0;
+      const nextIdx = idx + offset;
+      const offMap = !isValidMove(idx, nextIdx);
+      COMBAT_RECORD.push(`Bot ${botId} checks: facing off-map = ${offMap}.`);
+      if (!offMap) i++;
+
+    } else if (cmd === "Angle Right") {
+      // Angle Right = Veer Right
+      [GAME_MAP_FACING, COMBAT_RECORD] =
+        await CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
+
+    } else if (cmd === "Activate Self-Destruct") {
+      COMBAT_RECORD.push(`Bot ${botId} activates self-destruct!`);
+      const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      if (idx !== -1) {
+        GAME_MAP_BOTS[idx]   = "0";
+        GAME_MAP_FACING[idx] = "0";
+        GAME_MAP_DAMAGE[idx] = "0";
+      }
+      newDeadBots.push(botId);
+      deadBotIds.add(botId);
+      break;
+
+    } else {
+      logError(COMBAT_RECORD, `Bot ${botId}: unknown command "${cmd}" — skipped`);
+    }
+  }
+
+  // Clear acquired targets at end of this bot's turn
+  delete acquiredTargetsMap[botId];
+
+  return { damageDealt, newDeadBots };
 }
 
-////////////////////////////////////////////////////////////////
-function ParseString(strParse, startParse, endParse) {
- //console.log("...Function ParseString Start...");
+// ─── MOVEMENT FUNCTIONS ───────────────────────────────────────────────────────
 
- //console.log("...strParse: " + strParse + " ...startParse: " + startParse + " ...endParse: " + endParse);
-  const startIndexParse = strParse.indexOf(startParse);
-  if (startIndexParse === -1) return null;
+export async function CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
 
-  const endIndexParse = strParse.indexOf(endParse, startIndexParse + startParse.length);
-  if (endIndexParse === -1) return null;
+  const facing = GAME_MAP_FACING[idx];
+  const offset = DIR_OFFSET[facing];
+  if (offset === undefined) return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
 
-  return strParse.substring(startIndexParse + startParse.length, endIndexParse);
+  const nextIdx = idx + offset;
+
+  if (!isValidMove(idx, nextIdx)) {
+    COMBAT_RECORD.push(`Bot ${botId} on space ${idx + 1} facing ${facing}: movement blocked (off map).`);
+    return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
+  }
+
+  if (GAME_MAP_BOTS[nextIdx] !== "0") {
+    COMBAT_RECORD.push(`Bot ${botId} on space ${idx + 1} facing ${facing}: movement blocked (space ${nextIdx + 1} occupied).`);
+    return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
+  }
+
+  // Swap all map data between current and next cell
+  [GAME_MAP_BOTS[idx],    GAME_MAP_BOTS[nextIdx]]   = [GAME_MAP_BOTS[nextIdx],   GAME_MAP_BOTS[idx]];
+  [GAME_MAP_FACING[idx],  GAME_MAP_FACING[nextIdx]]  = [GAME_MAP_FACING[nextIdx], GAME_MAP_FACING[idx]];
+  [GAME_MAP_DAMAGE[idx],  GAME_MAP_DAMAGE[nextIdx]]  = [GAME_MAP_DAMAGE[nextIdx], GAME_MAP_DAMAGE[idx]];
+
+  COMBAT_RECORD.push(`Move Bot ${botId} from space ${idx + 1} to ${nextIdx + 1} facing ${facing}.`);
+  return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
 }
 
+export async function CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, steps = 1) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
 
-//////////////// STRIP A CHARACTER ///////////////////////
-//const original = "banana";
-//const stripped = original.replaceAll("a", ""); 
-//console.log(stripped); // "bnn"
+  for (let s = 0; s < steps; s++) {
+    const idx = findBotIndex(GAME_MAP_BOTS, botId);
+    if (idx === -1) break;
 
+    const facing = GAME_MAP_FACING[idx];
+    const offset = DIR_OFFSET[facing];
+    if (offset === undefined) break;
 
-// ==================================================================
-// MOVEMENT FUNCTIONS (placeholder implementations)
-//===================================================================
+    const backIdx = idx - offset; // reverse direction
 
+    if (!isValidMove(idx, backIdx) || GAME_MAP_BOTS[backIdx] !== "0") {
+      COMBAT_RECORD.push(`Bot ${botId} on space ${idx + 1}: backward movement blocked.`);
+      break;
+    }
 
-//JAYJAY
+    [GAME_MAP_BOTS[idx],    GAME_MAP_BOTS[backIdx]]   = [GAME_MAP_BOTS[backIdx],   GAME_MAP_BOTS[idx]];
+    [GAME_MAP_FACING[idx],  GAME_MAP_FACING[backIdx]]  = [GAME_MAP_FACING[backIdx], GAME_MAP_FACING[idx]];
+    [GAME_MAP_DAMAGE[idx],  GAME_MAP_DAMAGE[backIdx]]  = [GAME_MAP_DAMAGE[backIdx], GAME_MAP_DAMAGE[idx]];
 
+    COMBAT_RECORD.push(`Bot ${botId} moves backward to space ${backIdx + 1}.`);
+  }
 
-
-export async function CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE){
-console.log("...... Function CURRENT_MOVE_BOT1 Start ..."); 
-//console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
-//console.log("..GAME_MAP_BOTS:" + JSON.stringify(GAME_MAP_BOTS));
-	var MY_BOT = "";  //CombatNumber of the Bot
-	var BotCount = 1;  //Number of Bot in the Array 
-	var CurrentSpace = 1; //Space on numbered map 
-	var NextSpace = 0; //Space on numbered map 
-	var NewSpace = ""; //Value on numbered map 
-	var OldSpace = ""; //Value on numbered map 
-	var IsOffMap = false;
-	var NextArraySpace = ""; //Number in the Array  
-	var CurrentArraySpace = ""; //Number in the Array 
-	
-////////////////////// 	GET combatBotNumber ////////////////////////
-	var startParse = "combatBotNumber";
-	var endParse = "EndOfData";
-	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-	var strParseReturn2 = strParseReturn.slice(2);
-	var BotID = strParseReturn2.slice(0, -1); 
-
-console.log("--JAYTEST 50--"); 
-	for (MY_BOT of GAME_MAP_BOTS)  {
-		if (MY_BOT == BotID){
-console.log("--BotID--" + BotID); 
-console.log("--MY_BOT--" + MY_BOT); 
-console.log("--BotCount--" + BotCount); 
-console.log("--CurrentSpace--" + CurrentSpace);
-
-			CurrentArraySpace = JSON.stringify(CurrentSpace - 1);
-			NextArraySpace = JSON.stringify(NextSpace - 1);
-
-///////////////////////// MOVE 1 /////////////////////////////
-console.log(" BotID: " + BotID + " NextSpace: " + NextSpace + "  CurrentSpace: " + CurrentSpace + "   .CURRENT_MOVE_BOT1");
-			if (GAME_MAP_FACING[CurrentArraySpace] == "N"){NextSpace = CurrentSpace - 10};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "NE"){NextSpace = CurrentSpace - 9};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "E"){NextSpace = CurrentSpace + 1};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "SE"){NextSpace = CurrentSpace + 11};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "S"){NextSpace = CurrentSpace + 10};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "SW"){NextSpace = CurrentSpace + 9};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "W"){NextSpace = CurrentSpace - 1};
-			if (GAME_MAP_FACING[CurrentArraySpace] == "NW"){NextSpace = CurrentSpace - 11};
-			
-console.log(" BotID: " + BotID + " NextSpace: " + NextSpace + "  CurrentSpace: " + CurrentSpace + "   .CURRENT_MOVE_BOT1");
-
-// at this point, you've identified the Bot you're trying to move, the space you're on, and the spot you want to move to. If the space is occupied, then send a message to Combat Record that this Bot's movement is blocked. Else swap the numbers of the two spaces in GAME_MAP_FACING, GAME_MAP_BOTS, and GAME_MAP_DAMAGE. Then send a message to Combat Record that this Bot's movement is complete.
-
-
-//!!!!!!!!!!! CHECK FOR OFF MAP 1 !!!!!!!!!!!!!!!
-			if (NextSpace > 100){OldSpace = IsOffMap = true;}//OFF MAP 
-			if (NextSpace < 1){OldSpace = IsOffMap = true;}//OFF MAP 
-			if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
-			if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
-			if (CurrentSpace < 20 && NextSpace > 80){OldSpace = IsOffMap = true;}//OFF MAP 
-			if (CurrentSpace > 80 && NextSpace < 20){OldSpace = IsOffMap = true;}//OFF MAP 
-//!!!!!!!!!!! CHECK FOR OFF MAP  2 !!!!!!!!!!!!!!!
-			if (IsOffMap == true){//OFF MAP 
-console.log("****** Bot is OFF MAP!");
-//					COMBAT_RECORD.push("Silly Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " is trying to move off of the game map.");
-console.log("*** Silly Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " is trying to move off of the game map. *****");
-			}//OFF MAP 
-			if (IsOffMap == false){// IsOffMap == false .. NOT OFF MAP 
-console.log("****** Bot is ON MAP!");
-
-////////////////// IF SPACE IS OCCUPIED /////////////////////
-console.log("--JAYTEST 57--"); 
-			NextArraySpace = JSON.stringify(NextSpace - 1);
-console.log(" NextArraySpace: " + NextArraySpace + "  NextArraySpace VALUE: " + GAME_MAP_BOTS[NextArraySpace]);
-
-				if (GAME_MAP_BOTS[NextArraySpace] !== "0"){// Space is Occupied ...
-console.log("--JAYTEST 60-- Next Space Occupied"); 
-//				COMBAT_RECORD.push("Trapped Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " can't move to occupied " + NextSpace + ".");
-console.log("*** Trapped Bot " + BotID + " on ANI_MAP_SPACE " + CurrentSpace + " can't move to occupied " + NextSpace + ". *****");
-
-console.log("...GAME_MAP_FACING:");
-console.log(JSON.stringify(GAME_MAP_FACING));
-
-console.log("...GAME_MAP_BOTS:");
-console.log(JSON.stringify(GAME_MAP_BOTS));
-
-console.log("...GAME_MAP_DAMAGE:");
-console.log(JSON.stringify(GAME_MAP_DAMAGE));
-				}// if (GAME_MAP_BOTS[NextArraySpace] !== "0" .. Occupied ..
-			
-			
-////////////////// BEGIN MOVEMENT only /////////////////////
-				if (GAME_MAP_BOTS[NextArraySpace] == "0"){// Space Unoccupied ...
-console.log("--JAYTEST 60-- Next Space Unoccupied"); 
-
-					if (NextSpace > 100){OldSpace = IsOffMap = true;}//OFF MAP 
-					if (NextSpace < 1){OldSpace = IsOffMap = true;}//OFF MAP 
-					if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
-					if (CurrentSpace == NextSpace){OldSpace = IsOffMap = true;}//OFF MAP 
-					if (CurrentSpace < 20 && NextSpace > 80){OldSpace = IsOffMap = true;}//OFF MAP 
-					if (CurrentSpace > 80 && NextSpace < 20){OldSpace = IsOffMap = true;}//OFF MAP 
-console.log("--JAYTEST 62--"); 
-
-//////////////////////// MAKE CHANGES ////////////////////////////
-
-console.log("...GAME_MAP_FACING:");
-console.log(JSON.stringify(GAME_MAP_FACING));
-
-console.log("...GAME_MAP_BOTS:");
-console.log(JSON.stringify(GAME_MAP_BOTS));
-
-console.log("...GAME_MAP_DAMAGE:");
-console.log(JSON.stringify(GAME_MAP_DAMAGE));
-
-
-					NextArraySpace = JSON.stringify(NextSpace - 1);
-					
-console.log(" NextArraySpace: " + NextArraySpace + " NextArraySpace VALUE: " + GAME_MAP_BOTS[NextArraySpace]);
-
-					CurrentArraySpace = JSON.stringify(CurrentSpace - 1);
-			
-console.log(" CurrentArraySpace: " + CurrentArraySpace + "  NextArraySpace VALUE: ]" + GAME_MAP_BOTS[CurrentArraySpace]);
-
-					OldSpace = GAME_MAP_FACING[CurrentArraySpace]; 
-					NewSpace = GAME_MAP_FACING[NextArraySpace]; 
-					
-					GAME_MAP_FACING[CurrentArraySpace] = NewSpace;
-					GAME_MAP_FACING[NextArraySpace] = OldSpace;
-					
-					OldSpace = GAME_MAP_BOTS[CurrentArraySpace]; 
-					NewSpace = GAME_MAP_BOTS[NextArraySpace]; 
-
-					GAME_MAP_BOTS[CurrentArraySpace] = NewSpace;
-					GAME_MAP_BOTS[NextArraySpace] = OldSpace;
-
-					OldSpace = GAME_MAP_DAMAGE[CurrentArraySpace]; 
-					NewSpace = GAME_MAP_DAMAGE[NextArraySpace]; 
-					
-					GAME_MAP_DAMAGE[CurrentArraySpace] = NewSpace;
-					GAME_MAP_DAMAGE[NextArraySpace] = OldSpace;
-
-
-console.log("*** Move Bot " + BotID + " from ANI_MAP_SPACE " + CurrentSpace + " to " + NextSpace + ". *****");
-
-
-console.log("...GAME_MAP_FACING:");
-console.log(JSON.stringify(GAME_MAP_FACING));
-
-console.log("...GAME_MAP_BOTS:");
-console.log(JSON.stringify(GAME_MAP_BOTS));
-
-console.log("...GAME_MAP_DAMAGE:");
-console.log(JSON.stringify(GAME_MAP_DAMAGE));
-
-console.log("--JAYTEST 56--"); 
-					BotID = "";  //change of CombatNumber to keep it from cycling more than once.
-				}// if (GAME_MAP_BOTS[NextArraySpace] == "0" .. Unoccupied ..
-			
-			}// IsOffMap == false .. NOT OFF MAP 
-		
-			BotCount++;
-		}// if (MY_BOT == BotID
-	CurrentSpace++;
-	}// for (MY_BOT of GAME_MAP_BOTS
-console.log("...Function CURRENT_MOVE_BOT1 End..."); 
-return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
-}//End of Function 
-
-
-
-
-
-export async function CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) { console.log("Start Function CURRENT_TURN_RIGHT"); 
-console.log("GAME_MAP_BOTS:" + JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
-	var BotCount = 0;
-	var SpaceCount = 0;
-	var MY_BOT = "";
-	var NewDir = "";
-	var startParse = "combatBotNumber";
-	var endParse = "EndOfData";
-	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-	var strParseReturn2 = strParseReturn.slice(2);
-	var BotID = strParseReturn2.slice(0, -1); 
-console.log("--JAYTEST 51--"); 
-
-	for (MY_BOT of GAME_MAP_BOTS)  {
-		if (MY_BOT == BotID){
-console.log("--JAYTEST 52--"); 
-console.log("--BotID--" + BotID); 
-console.log("--MY_BOT--" + MY_BOT); 
-console.log("--BotCount--" + BotCount); 
-console.log("--SpaceCount--" + SpaceCount); 
-///////////////////////// TURN RIGHT /////////////////////////////
-			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "E"};
-			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "SE"};
-			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "S"};
-			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "SW"};
-			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "W"};
-			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "NW"};
-			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "N"};
-			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "NE"};
-			GAME_MAP_FACING[SpaceCount] = NewDir;
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
-			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
-			BotCount++;
-		}// if (MY_BOT == "0 .CURRENT_TURN_RIGHT
-	SpaceCount++;
-	}//for (MY_BOT of GAME_MAP_BOTS
-
-console.log("GAME_MAP_FACING After: " + JSON.stringify(GAME_MAP_FACING));
-return [GAME_MAP_FACING, COMBAT_RECORD];}
-
-// const fruits = ['apple', 'banana', 'cherry'];
-//fruits[1] = 'blueberry'; 
-//console.log(fruits); // ['apple', 'blueberry', 'cherry']
-
-
-
-export async function CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_TURN_LEFT"); 
-
-console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_FACING Before: " + JSON.stringify(GAME_MAP_FACING));
-	var BotCount = 0;
-	var SpaceCount = 0;
-	var MY_BOT = "";
-	var NewDir = "";
-	var startParse = "combatBotNumber";
-	var endParse = "EndOfData";
-	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-	var strParseReturn2 = strParseReturn.slice(2);
-	var BotID = strParseReturn2.slice(0, -1); 
-	for (MY_BOT of GAME_MAP_BOTS)  {
-		if (MY_BOT == BotID){
-console.log("--JAYTEST 53--"); 
-console.log("--BotID--" + BotID); 
-console.log("--MY_BOT--" + MY_BOT); 
-console.log("--BotCount--" + BotCount); 
-console.log("--SpaceCount--" + SpaceCount); 
-/////////////////////////TURN LEFT /////////////////////////////
-			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "W"};
-			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "SW"};
-			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "N"};
-			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "NW"};
-			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "E"};
-			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "NE"};
-			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "S"};
-			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "SE"};
-			GAME_MAP_FACING[SpaceCount] = NewDir;
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
-			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
-			BotCount++;
-		}// if (MY_BOT == "0 .CURRENT_TURN_LEFT
-	SpaceCount++;
-	}//for (MY_BOT of GAME_MAP_BOTS
-return [GAME_MAP_FACING, COMBAT_RECORD];}
-
-
-export async function CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_VEER_RIGHT"); 
-console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
-	var BotCount = 0;
-	var SpaceCount = 0;
-	var MY_BOT = "";
-	var NewDir = "";
-	var startParse = "combatBotNumber";
-	var endParse = "EndOfData";
-	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-	var strParseReturn2 = strParseReturn.slice(2);
-	var BotID = strParseReturn2.slice(0, -1); 
-	for (MY_BOT of GAME_MAP_BOTS)  {
-		if (MY_BOT == BotID){
-console.log("--JAYTEST 54--"); 
-console.log("--BotID--" + BotID); 
-console.log("--MY_BOT--" + MY_BOT); 
-console.log("--BotCount--" + BotCount); 
-console.log("--SpaceCount--" + SpaceCount); 
-/////////////////////////TURN LEFT /////////////////////////////
-			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "NE"};
-			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "E"};
-			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "SE"};
-			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "S"};
-			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "SW"};
-			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "W"};
-			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "NW"};
-			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "N"};
-			GAME_MAP_FACING[SpaceCount] = NewDir;
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
-			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
-			BotCount++;
-		}// if (MY_BOT == "0 .CURRENT_VEER_RIGHT 
-	SpaceCount++;
-	}//for (MY_BOT of GAME_MAP_BOTS
-return [GAME_MAP_FACING, COMBAT_RECORD];}
-
-
-export async function CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS)       { console.log("Start Function CURRENT_VEER_LEFT"); 
-console.log("GAME_MAP_BOTS:", JSON.stringify(GAME_MAP_BOTS));
-console.log("GAME_MAP_FACING Before: ", JSON.stringify(GAME_MAP_FACING));
-	var BotCount = 0;
-	var SpaceCount = 0;
-	var MY_BOT = "";
-	var NewDir = "";
-	var startParse = "combatBotNumber";
-	var endParse = "EndOfData";
-	var strParse = JSON.stringify(CURRENT_BOT) + "EndOfData";
-	var strParseReturn = ParseString(strParse, startParse, endParse);
-	var strParseReturn2 = strParseReturn.slice(2);
-	var BotID = strParseReturn2.slice(0, -1); 
-	for (MY_BOT of GAME_MAP_BOTS)  {
-		if (MY_BOT == BotID){
-console.log("--JAYTEST 55--"); 
-console.log("--BotID--" + BotID); 
-console.log("--MY_BOT--" + MY_BOT); 
-console.log("--BotCount--" + BotCount); 
-console.log("--SpaceCount--" + SpaceCount); 
-/////////////////////////TURN LEFT /////////////////////////////
-			if (GAME_MAP_FACING[SpaceCount] == "N"){NewDir = "NW"};
-			if (GAME_MAP_FACING[SpaceCount] == "NE"){NewDir = "N"};
-			if (GAME_MAP_FACING[SpaceCount] == "E"){NewDir = "NE"};
-			if (GAME_MAP_FACING[SpaceCount] == "SE"){NewDir = "E"};
-			if (GAME_MAP_FACING[SpaceCount] == "S"){NewDir = "SE"};
-			if (GAME_MAP_FACING[SpaceCount] == "SW"){NewDir = "S"};
-			if (GAME_MAP_FACING[SpaceCount] == "W"){NewDir = "NW"};
-			if (GAME_MAP_FACING[SpaceCount] == "NW"){NewDir = "W"};
-			GAME_MAP_FACING[SpaceCount] = NewDir;
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + 1  + ".");
-			COMBAT_RECORD.push("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount -1  + ".");
-			console.log("Rotate Bot " + BotID + " to face " + NewDir + " on ANI_MAP_SPACE " + SpaceCount + ".");
-			BotCount++;
-		}// if (MY_BOT == "0 .CURRENT_VEER_LEFT
-	SpaceCount++;
-	}//for (MY_BOT of GAME_MAP_BOTS
-return [GAME_MAP_FACING, COMBAT_RECORD];}
-
-
-
-
-export async function CURRENT_MOVE_BOT2(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT2");
-return [myReturnValue]; }
-export async function CURRENT_MOVE_BOT3(myReturnValue)       { 
-
-console.log("Start Function CURRENT_MOVE_BOT3 Start...");
-console.log("TEST 22");
- return [myReturnValue];
- }
-export async function CURRENT_MOVE_BOT4(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT4"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_BOT5(myReturnValue)       { console.log("Start Function CURRENT_MOVE_BOT5"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_BOTMAX(myReturnValue)     { console.log("Start Function CURRENT_MOVE_BOTMAX"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_BOT_BACK1(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK1"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_BOT_BACK2(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK2"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_BOT_BACK3(myReturnValue)  { console.log("Start Function CURRENT_MOVE_BOT_BACK3"); 
-return [myReturnValue];}
-
-export async function CURRENT_ROTATE_BOT(direction) {
-  console.log(`CURRENT_ROTATE_BOT: ${direction}`);
-return [myReturnValue];}
-
-export async function CURRENT_MOVE_BLOCKED_ENEMY(myReturnValue) { console.log("Start Function CURRENT_MOVE_BLOCKED_ENEMY"); 
-return [myReturnValue];}
-export async function CURRENT_MOVE_TOWARD_ENEMY(myReturnValue)  { console.log("Start Function CURRENT_MOVE_TOWARD_ENEMY"); 
-return [myReturnValue];}
-export async function FIRE_MASTER_WEAPON(myReturnValue)          { console.log("Start Function FIRE_MASTER_WEAPON"); 
-return [myReturnValue];}
-export async function FIRE_SECONDARY_WEAPON(myReturnValue)       { console.log("Start Function FIRE_SECONDARY_WEAPON"); 
-return [myReturnValue];}
-export async function FIRE_ALL_WEAPONS(myReturnValue)            { console.log("Start Function FIRE_ALL_WEAPONS"); 
-return [myReturnValue];}
-export async function CURRENT_ACTIVATE_SCANNER(myReturnValue)   { console.log("Start Function CURRENT_ACTIVATE_SCANNER"); 
-return [myReturnValue];}
-export async function CURRENT_ACTIVATE_SELF_DESTRUCT(myReturnValue) { console.log("Start Function CURRENT_ACTIVATE_SELF_DESTRUCT"); 
-return [myReturnValue];}
-export async function IDENTIFY_ANY_ENEMIES(myReturnValue)        { console.log("Start Function IDENTIFY_ANY_ENEMIES"); 
-return [myReturnValue];}
-
-export async function MOVE_TOWARD_LOCATED_ENEMY(myReturnValue)        { console.log("Start Function MOVE_TOWARD_LOCATED_ENEMY"); 
-return [myReturnValue];}
-
-
-export async function CURRENT_ARMOR_WEAK(threshold) {
-  console.log(`CURRENT_ARMOR_WEAK: threshold=${threshold}`);
+  return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
 }
 
-// ============================================================================
-// SCANNER / TARGETING
-// ============================================================================
+export async function CURRENT_TURN_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD];
 
-/**
- * CURRENT_ACTIVATE_SCANNER_FULL
- *
- * Activates the bot's scanner to identify enemy targets within range.
- */
+  const newDir = TURN_RIGHT_MAP[GAME_MAP_FACING[idx]] ?? GAME_MAP_FACING[idx];
+  GAME_MAP_FACING[idx] = newDir;
+  COMBAT_RECORD.push(`Rotate Bot ${botId} right to face ${newDir} on space ${idx + 1}.`);
+  return [GAME_MAP_FACING, COMBAT_RECORD];
+}
+
+export async function CURRENT_TURN_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD];
+
+  const newDir = TURN_LEFT_MAP[GAME_MAP_FACING[idx]] ?? GAME_MAP_FACING[idx];
+  GAME_MAP_FACING[idx] = newDir;
+  COMBAT_RECORD.push(`Rotate Bot ${botId} left to face ${newDir} on space ${idx + 1}.`);
+  return [GAME_MAP_FACING, COMBAT_RECORD];
+}
+
+export async function CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD];
+
+  const newDir = VEER_RIGHT_MAP[GAME_MAP_FACING[idx]] ?? GAME_MAP_FACING[idx];
+  GAME_MAP_FACING[idx] = newDir;
+  COMBAT_RECORD.push(`Veer Bot ${botId} right to face ${newDir} on space ${idx + 1}.`);
+  return [GAME_MAP_FACING, COMBAT_RECORD];
+}
+
+export async function CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD];
+
+  const newDir = VEER_LEFT_MAP[GAME_MAP_FACING[idx]] ?? GAME_MAP_FACING[idx];
+  GAME_MAP_FACING[idx] = newDir;
+  COMBAT_RECORD.push(`Veer Bot ${botId} left to face ${newDir} on space ${idx + 1}.`);
+  return [GAME_MAP_FACING, COMBAT_RECORD];
+}
+
+export async function CURRENT_MOVE_TOWARD_ENEMY(
+  CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+  COMBAT_RECORD, botStatsMap
+) {
+  const botId = String(CURRENT_BOT.combatBotNumber);
+  const idx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (idx === -1) return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
+
+  const stats = botStatsMap[CURRENT_BOT.combatBotNumber];
+  const range = stats?.sensorRange ?? 3;
+  const enemies = scanForEnemies(idx, CURRENT_BOT.army, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, range);
+
+  if (enemies.length === 0) {
+    COMBAT_RECORD.push(`Bot ${botId}: no enemies found to move toward.`);
+    return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];
+  }
+
+  // Face toward nearest enemy then move
+  const targetIdx = enemies[0];
+  const fromRow = Math.floor(idx / 10), fromCol = idx % 10;
+  const toRow   = Math.floor(targetIdx / 10), toCol = targetIdx % 10;
+  const dr = Math.sign(toRow - fromRow), dc = Math.sign(toCol - fromCol);
+
+  const dirEntry = Object.entries(DIR_OFFSET).find(([, off]) => {
+    const r = Math.floor(off / 10) || (off < 0 ? -1 : off > 0 ? 1 : 0);
+    const c = off % 10;
+    return r === dr && c === dc;
+  });
+
+  if (dirEntry) {
+    GAME_MAP_FACING[idx] = dirEntry[0];
+  }
+
+  return CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+}
+
+// ─── SCANNER ─────────────────────────────────────────────────────────────────
+
+function scanForEnemies(botIndex, botArmy, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, range) {
+  const results = [];
+  const botRow = Math.floor(botIndex / 10);
+  const botCol = botIndex % 10;
+
+  for (let i = 0; i < GAME_MAP_BOTS.length; i++) {
+    const cell = GAME_MAP_BOTS[i];
+    if (cell === "0") continue;
+    const targetBot = ALL_BOTS_IN_COMBAT_LIST.find(b => String(b.combatBotNumber) === cell);
+    if (!targetBot || targetBot.army === botArmy) continue;
+    const r = Math.floor(i / 10), c = i % 10;
+    const dist = Math.max(Math.abs(r - botRow), Math.abs(c - botCol)); // Chebyshev distance
+    if (dist <= range) results.push(i);
+  }
+
+  return results;
+}
+
+// ─── WEAPON FUNCTIONS ─────────────────────────────────────────────────────────
+
+function applyWeaponHit(fromSpace, targetIdx, damage, weaponLabel, targetBotId,
+  GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD) {
+  const targetSpace = targetIdx + 1;
+  const hp    = parseInt(GAME_MAP_DAMAGE[targetIdx]) || 0;
+  const newHp = Math.max(0, hp - damage);
+  GAME_MAP_DAMAGE[targetIdx] = String(newHp);
+  COMBAT_RECORD.push(`Fired ${weaponLabel} from space ${fromSpace} and hit space ${targetSpace} for ${damage} damage. HP: ${hp} → ${newHp}.`);
+  const newDeadBots = [];
+  if (newHp <= 0) {
+    GAME_MAP_BOTS[targetIdx]   = "0";
+    GAME_MAP_FACING[targetIdx] = "0";
+    GAME_MAP_DAMAGE[targetIdx] = "0";
+    newDeadBots.push(targetBotId);
+    COMBAT_RECORD.push(`Bot ${targetBotId} on space ${targetSpace} is destroyed!`);
+  }
+  return { damageDealt: true, newDeadBots };
+}
+
+function fireWeapon(CURRENT_BOT, damage, range, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+  COMBAT_RECORD, ALL_BOTS_IN_COMBAT_LIST, weaponLabel, acquiredTargetIdx = null) {
+  const botId  = String(CURRENT_BOT.combatBotNumber);
+  const botIdx = findBotIndex(GAME_MAP_BOTS, botId);
+  if (botIdx === -1) {
+    logError(COMBAT_RECORD, `Bot ${botId} not found on map when firing ${weaponLabel}`);
+    return { damageDealt: false, newDeadBots: [] };
+  }
+  if (damage === 0 || range === 0) {
+    logError(COMBAT_RECORD, `Bot ${botId} ${weaponLabel} has no damage or range (WD=${damage}, WR=${range})`);
+    return { damageDealt: false, newDeadBots: [] };
+  }
+  const botSpace = botIdx + 1;
+
+  // ── Acquired target: check it is still present and in range ───────────────
+  if (acquiredTargetIdx !== null) {
+    const botRow = Math.floor(botIdx / 10), botCol = botIdx % 10;
+    const tRow   = Math.floor(acquiredTargetIdx / 10), tCol = acquiredTargetIdx % 10;
+    const dist   = Math.max(Math.abs(botRow - tRow), Math.abs(botCol - tCol));
+    const cell   = GAME_MAP_BOTS[acquiredTargetIdx];
+    const targetBot = cell !== "0"
+      ? ALL_BOTS_IN_COMBAT_LIST.find(b => String(b.combatBotNumber) === cell)
+      : null;
+
+    if (dist <= range && targetBot && targetBot.army !== CURRENT_BOT.army) {
+      return applyWeaponHit(botSpace, acquiredTargetIdx, damage, weaponLabel, cell,
+        GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD);
+    }
+    COMBAT_RECORD.push(`Bot ${botId} ${weaponLabel}: acquired target out of range or gone — scanning forward.`);
+  }
+
+  // ── No target (or out of range): scan forward along facing direction ───────
+  const facing = GAME_MAP_FACING[botIdx];
+  const offset = DIR_OFFSET[facing];
+  if (offset === undefined) return { damageDealt: false, newDeadBots: [] };
+
+  let scanIdx = botIdx;
+  for (let r = 1; r <= range; r++) {
+    const nextIdx = scanIdx + offset;
+    if (!isValidMove(scanIdx, nextIdx)) break;
+    scanIdx = nextIdx;
+    const cell = GAME_MAP_BOTS[scanIdx];
+    if (cell !== "0") {
+      // Hits the first bot in the line regardless of army — friendly fire is possible
+      return applyWeaponHit(botSpace, scanIdx, damage, weaponLabel, cell,
+        GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD);
+    }
+  }
+
+  COMBAT_RECORD.push(`Fired ${weaponLabel} from space ${botSpace} — no targets hit.`);
+  return { damageDealt: false, newDeadBots: [] };
+}
+
+function fireMasterWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+  COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquiredTargetIdx = null) {
+  const stats = botStatsMap[CURRENT_BOT.combatBotNumber];
+  return fireWeapon(CURRENT_BOT, stats?.masterWD ?? 0, stats?.masterWR ?? 0,
+    GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, ALL_BOTS_IN_COMBAT_LIST,
+    "Master", acquiredTargetIdx);
+}
+
+function fireSecondaryWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+  COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquiredTargetIdx = null) {
+  const stats = botStatsMap[CURRENT_BOT.combatBotNumber];
+  if (!stats?.secondaryWD) return { damageDealt: false, newDeadBots: [] };
+  return fireWeapon(CURRENT_BOT, stats.secondaryWD, stats.secondaryWR,
+    GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, ALL_BOTS_IN_COMBAT_LIST,
+    "Secondary", acquiredTargetIdx);
+}
+
+export async function FIRE_MASTER_WEAPON(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST) {
+  return fireMasterWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST);
+}
+
+export async function FIRE_SECONDARY_WEAPON(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST) {
+  return fireSecondaryWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST);
+}
+
+export async function FIRE_ALL_WEAPONS(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST) {
+  const r1 = fireMasterWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST);
+  const r2 = fireSecondaryWeapon(CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST);
+  return { damageDealt: r1.damageDealt || r2.damageDealt, newDeadBots: [...r1.newDeadBots, ...r2.newDeadBots] };
+}
+
+// ─── SCANNER / TARGETING (kept for future animation use) ─────────────────────
+
 export async function CURRENT_ACTIVATE_SCANNER_FULL(combatState) {
-  console.log("CURRENT_ACTIVATE_SCANNER_FULL called");
-
   try {
     let CURRENT_BULLET_TARGET1 = "";
     let CURRENT_BULLET_TARGET2 = "";
@@ -1333,8 +964,7 @@ export async function CURRENT_ACTIVATE_SCANNER_FULL(combatState) {
 
     for (const CURRENT_BOT_TEMP of ALL_BOTS_IN_COMBAT_LIST_TEMP) {
       if (CURRENT_BULLET_TARGET2 !== "") break;
-
-      const BOT_LOCATION_TEMP        = CURRENT_BOT_TEMP.location || "0,0";
+      const BOT_LOCATION_TEMP          = CURRENT_BOT_TEMP.location || "0,0";
       const CURRENT_TARGETING_BOT_ARMY = CURRENT_BOT_TEMP.army || 1;
 
       for (let mapIndex = 0; mapIndex < GAME_MAP_TARGETING.length; mapIndex++) {
@@ -1349,7 +979,6 @@ export async function CURRENT_ACTIVATE_SCANNER_FULL(combatState) {
       }
     }
 
-    console.log(`Scanner: Target1=${CURRENT_BULLET_TARGET1}, Target2=${CURRENT_BULLET_TARGET2}`);
     return { ...combatState, CURRENT_BULLET_TARGET1, CURRENT_BULLET_TARGET2, GAME_MAP_TARGETING };
   } catch (error) {
     console.error("CURRENT_ACTIVATE_SCANNER_FULL error:", error);
@@ -1364,12 +993,7 @@ function calculateDistance(space1, location2, maxRange) {
   return Math.abs(x1 - x2) + Math.abs(y1 - y2) <= maxRange;
 }
 
-/**
- * ROTATE_TARGETING_MAP
- */
 export async function ROTATE_TARGETING_MAP(targetingMap, facing) {
-  console.log(`ROTATE_TARGETING_MAP: facing=${facing}`);
-
   try {
     const rotationMap = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
     const rotations = rotationMap[facing] || 0;
@@ -1395,98 +1019,10 @@ function rotateGridClockwise(grid) {
   return rotated;
 }
 
-/**
- * PROCESS_TURN
- */
-export async function PROCESS_TURN(currentArmy, targetArmy) {
-  console.log(`PROCESS_TURN: ${currentArmy.name} attacking ${targetArmy.name}`);
-  
-  
-  return { success: true };
-}
+// ─── PROFILE / STATS INTEGRATION ─────────────────────────────────────────────
 
-/**
- * EXECUTE_BOT_ACTION
- */
-export async function EXECUTE_BOT_ACTION(bot, action, targetBot = null) {
-  console.log(`EXECUTE_BOT_ACTION: Bot ${bot.name} executing ${action}`);
-  return { success: true };
-}
-
-/**
- * CALCULATE_DAMAGE
- */
-export function CALCULATE_DAMAGE(attacker, weapon, defender) {
-  console.log(`CALCULATE_DAMAGE: ${attacker.name} with ${weapon} vs ${defender.name}`);
-  return 0;
-}
-
-/**
- * CHECK_WIN_CONDITION
- */
-export async function CHECK_WIN_CONDITION() {
-  console.log("CHECK_WIN_CONDITION called");
-  return { gameOver: false };
-}
-
-/**
- * END_COMBAT
- */
-export async function END_COMBAT(winnerId, loserId) {
-  console.log(`END_COMBAT: Winner=${winnerId}, Loser=${loserId}`);
-  return { success: true };
-}
-
-/**
- * CHECK_BOT_TOTALS
- *
- * Calculates total bot statistics from selected component description strings.
- */
-export function CHECK_BOT_TOTALS(frame, engine, computer, armor, sensor, weaponMaster, weaponSecondary, weaponBomb) {
-  console.log("CHECK_BOT_TOTALS called");
-
-  // SLOT_COUNT
-  // WEIGHT_TOTAL
-  // POWER_TOTAL (weapon power draw)
-  // POWER_OUTPUT (engine output)
-
-  return {
-    slotsDisplay,
-    slotsColor,
-    totalWeight: WEIGHT_TOTAL.toString(),
-    totalGold:   GOLD_COUNT.toString(),
-    totalPower:  POWER_TOTAL.toString(),
-    move:        MAX_MOVEMENT.toString(),
-  };
-}
-
-/**
- * GET_VALUES_FROM_RECORDS
- *
- * Extracts and initializes all combat variables from the current bot record.
- */
 export async function GET_VALUES_FROM_RECORDS(currentBot, armyNumber, currentBotNumber) {
-  console.log(`GET_VALUES_FROM_RECORDS: bot=${currentBot.name}, army=${armyNumber}`);
-
   try {
-    const CURRENT_BOT_NAME     = currentBot.name;
-    const CURRENT_BOT_NUMBER   = currentBotNumber;
-    const CURRENT_BOT_LOCATION = currentBot.location || "0,0";
-    const RECORD_BOT_ARMY      = armyNumber;
-    const CURRENT_BOT_FACING   = currentBot.facing || "N";
-
-    const ANI_BOT_NUMBER       = CURRENT_BOT_NUMBER;
-    const ANI_BOT_FACING       = CURRENT_BOT_FACING;
-    const ANI_IMAGE_NAME_PART  = currentBot.botImage || "Default Bot Image";
-    const ANI_IMAGE_NAME_FULL  = `${ANI_IMAGE_NAME_PART}_P${RECORD_BOT_ARMY}_D${ANI_BOT_FACING}`;
-
-    const CURRENT_BULLET_LOCATION = CURRENT_BOT_LOCATION;
-    const CURRENT_BULLET_FACING   = ANI_BOT_FACING;
-
-    const moveValue          = parseInt(currentBot.move || "0");
-    const CURRENT_BOT_MOVEMENT = moveValue > 0 ? moveValue : 0;
-
-    // Extract component names from description strings before querying DB
     const frameComponent  = await db.botFrames.where("name").equals(extractComponentName(currentBot.frame)).first();
     const armorComponent  = await db.botArmors.where("name").equals(extractComponentName(currentBot.armor)).first();
     const masterWeapon    = await db.botMasters.where("name").equals(extractComponentName(currentBot.weaponMaster)).first();
@@ -1494,117 +1030,40 @@ export async function GET_VALUES_FROM_RECORDS(currentBot, armyNumber, currentBot
     const bombWeapon      = await db.botBombs.where("name").equals(extractComponentName(currentBot.weaponBomb)).first();
     const sensorComponent = await db.botSensors.where("name").equals(extractComponentName(currentBot.sensor)).first();
 
-    const RECORD_BOT_ARMOR             = (frameComponent?.nd || 0) + (armorComponent?.ad || 0);
-    const CURRENT_BOT_ARMOR            = RECORD_BOT_ARMOR;
-
-    const RECORD_MASTER_WEAPON_RANGE   = masterWeapon?.wr || 0;
-    const CURRENT_MASTER_WEAPON_RANGE  = RECORD_MASTER_WEAPON_RANGE;
-
-    const RECORD_SECONDARY_WEAPON_RANGE   = secondaryWeapon?.wr || 0;
-    const CURRENT_SECONDARY_WEAPON_RANGE  = RECORD_SECONDARY_WEAPON_RANGE;
-
-    const RECORD_MASTER_WEAPON_DAMAGE   = masterWeapon?.wd || 0;
-    const CURRENT_MASTER_WEAPON_DAMAGE  = RECORD_MASTER_WEAPON_DAMAGE;
-
-    const RECORD_SECONDARY_WEAPON_DAMAGE   = secondaryWeapon?.wd || 0;
-    const CURRENT_SECONDARY_WEAPON_DAMAGE  = RECORD_SECONDARY_WEAPON_DAMAGE;
-
-    const RECORD_BOT_SENSOR_RANGE = sensorComponent?.range || 0;
-    const RECORD_BOT_SENSOR_COUNT = sensorComponent?.targets || 0;
-
-    const RECORD_BOMB1_DAMAGE = bombWeapon?.wd || 0;
-    const RECORD_BOMB2_DAMAGE = Math.floor(RECORD_BOMB1_DAMAGE / 2);
-
-    const CLOCKWISE_COMPASS_DIRECTION        = "North,NorthEast,East,SouthEast,South,SouthWest,West,NorthWest".split(",");
-    const COUNTERCLOCKWISE_COMPASS_DIRECTION = "North,NorthWest,West,SouthWest,South,SouthEast,East,NorthEast".split(",");
-
-    const ACTIONS_COUNT_TEMP  = "";
-    const ACTIONS_MAX_TEMP    = "";
-    const ANI_MOVE_TO         = "";
-    const ANI_NUMBER_TEMP     = "1-100";
-    const ANI_SHORT_FACING    = "";
-    const CURRENT_BULLET_TARGET1 = "";
-    const CURRENT_BULLET_TARGET2 = "";
-    const CURRENT_COMMAND     = "";
-    const NEW_GAME_MAP_SQUARE = "";
-    const NEXT_BOT_LOCATION   = "";
-    const NEXT_BOT_FACING     = "";
-    const NEXT_BULLET_LOCATION = "";
-    const SENSOR_ALLIED_BOTS  = "0,0,0,0,0";
-    const SENSOR_ENEMY_BOTS   = "0,0,0,0,0";
-    const ANI_MICRO_DELAY     = 0.5;
-    const ANI_MACRO_DELAY     = 1.0;
-    const ANI_BULLET_NAME     = "Bullet_All";
-    const ALL_BOTS_IN_COMBAT_LIST_TEMP = currentBot;
-
     return {
-      CURRENT_BOT_NAME, CURRENT_BOT_NUMBER, CURRENT_BOT_LOCATION,
-      RECORD_BOT_ARMY, CURRENT_BOT_FACING,
-      ANI_BOT_NUMBER, ANI_BOT_FACING, ANI_IMAGE_NAME_PART, ANI_IMAGE_NAME_FULL,
-      CURRENT_BULLET_LOCATION, CURRENT_BULLET_FACING,
-      CURRENT_BOT_MOVEMENT,
-      CURRENT_BOT_ARMOR, RECORD_BOT_ARMOR,
-      CURRENT_MASTER_WEAPON_RANGE, RECORD_MASTER_WEAPON_RANGE,
-      CURRENT_SECONDARY_WEAPON_RANGE, RECORD_SECONDARY_WEAPON_RANGE,
-      CURRENT_MASTER_WEAPON_DAMAGE, RECORD_MASTER_WEAPON_DAMAGE,
-      CURRENT_SECONDARY_WEAPON_DAMAGE, RECORD_SECONDARY_WEAPON_DAMAGE,
-      RECORD_BOT_SENSOR_RANGE, RECORD_BOT_SENSOR_COUNT,
-      RECORD_BOMB1_DAMAGE, RECORD_BOMB2_DAMAGE,
-      CLOCKWISE_COMPASS_DIRECTION, COUNTERCLOCKWISE_COMPASS_DIRECTION,
-      ACTIONS_COUNT_TEMP, ACTIONS_MAX_TEMP,
-      ANI_MOVE_TO, ANI_NUMBER_TEMP, ANI_SHORT_FACING,
-      CURRENT_BULLET_TARGET1, CURRENT_BULLET_TARGET2,
-      CURRENT_COMMAND, NEW_GAME_MAP_SQUARE,
-      NEXT_BOT_LOCATION, NEXT_BOT_FACING, NEXT_BULLET_LOCATION,
-      SENSOR_ALLIED_BOTS, SENSOR_ENEMY_BOTS,
-      ANI_MICRO_DELAY, ANI_MACRO_DELAY, ANI_BULLET_NAME,
-      ALL_BOTS_IN_COMBAT_LIST_TEMP,
+      CURRENT_BOT_NAME:     currentBot.name,
+      CURRENT_BOT_NUMBER:   currentBotNumber,
+      RECORD_BOT_ARMY:      armyNumber,
+      CURRENT_BOT_ARMOR:    (frameComponent?.nd || 0) + (armorComponent?.ad || 0),
+      RECORD_MASTER_WEAPON_DAMAGE:    masterWeapon?.wd    || 0,
+      RECORD_MASTER_WEAPON_RANGE:     masterWeapon?.wr    || 0,
+      RECORD_SECONDARY_WEAPON_DAMAGE: secondaryWeapon?.wd || 0,
+      RECORD_SECONDARY_WEAPON_RANGE:  secondaryWeapon?.wr || 0,
+      RECORD_BOMB1_DAMAGE:  bombWeapon?.wd                || 0,
+      RECORD_BOMB2_DAMAGE:  Math.floor((bombWeapon?.wd    || 0) / 2),
+      RECORD_BOT_SENSOR_RANGE:   sensorComponent?.range   || 0,
+      RECORD_BOT_SENSOR_COUNT:   sensorComponent?.targets || 0,
+      CURRENT_BOT_MOVEMENT: parseInt(currentBot.move) || 0,
+      ANI_IMAGE_NAME_FULL:  `${currentBot.botImage}_P${armyNumber}_D${"E"}`,
     };
   } catch (error) {
     console.error("GET_VALUES_FROM_RECORDS error:", error);
-    return { success: false, message: "Failed to get values from records." };
+    return null;
   }
 }
 
-
-async function dumpDB() {
-  const result = {};
-console.log("... JAYTEST 6 ...");	
-  for (const table of db.tables) {
-    const name = table.name;
-    const rows = await table.toArray();
-    result[name] = rows;
-  }
-
-  console.log(result);
-}
-
-
-
-/**
- * START_COMBAT
- */
-export async function START_COMBAT() {
-  console.log("START_COMBAT called");
+export async function PROCESS_TURN(currentArmy, targetArmy) {
   return { success: true };
 }
 
-//=====================================================================
-// COMBAT_RECORD_STRINGS //======================================================================
-/*
-Place Bot 01 facing West on ANI_MAP_SPACE 9.
-Start turn of Bot 01 facing West on ANI_MAP_SPACE 9.
-Rotate Bot 01 to face SouthWest on ANI_MAP_SPACE 9.
-Activate Scan Bot 01 facing SouthWest on ANI_MAP_SPACE 9.
-Locate Enemy Bots at ANI_MAP_SPACE 0, 0, 0, 0, 0.
-Locate Allied Bots at ANI_MAP_SPACE 19, 29, 39, 20, 10.
-Move Bot 01 facing SouthWest from ANI_MAP_SPACE 9 to 18.
-Fired Bullet All on ANI_MAP_SPACE 18 facing SouthWest Range 4.
-Traveling Bullet All on ANI_MAP_SPACE 27 facing South Range 3.
-Traveling Bullet All on ANI_MAP_SPACE 36 facing South Range 2.
-Traveling Bullet All on ANI_MAP_SPACE 45 facing South Range 1.
-Striking Bullet All on ANI_MAP_SPACE 54 facing South Range 0.
-Damage strikes Bot 26 on ANI_MAP_SPACE 54 total 150.
-Destroyed Bot 26 on ANI_MAP_SPACE 54.
-Victory to Player1 by Army2 surviving Allied 7 Bots surviving Enemies 0 Bots. 
-*/
+export async function START_COMBAT() {
+  return { success: true };
+}
+
+export async function CHECK_WIN_CONDITION() {
+  return { gameOver: false };
+}
+
+export async function END_COMBAT(winnerId, loserId) {
+  return { success: true };
+}

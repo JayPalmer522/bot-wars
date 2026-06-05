@@ -2,10 +2,12 @@ import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface BattleLogState {
   log: string[];
+  combatRecord: object[];
 }
 
 const initialState: BattleLogState = {
   log: [],
+  combatRecord: [],
 };
 
 const battleLogSlice = createSlice({
@@ -18,8 +20,11 @@ const battleLogSlice = createSlice({
     clearLog: (state) => {
       state.log = [];
     },
+    setCombatRecord: (state, action: PayloadAction<object[]>) => {
+      state.combatRecord = action.payload;
+    },
   },
 });
 
-export const { addLogEntry, clearLog } = battleLogSlice.actions;
+export const { addLogEntry, clearLog, setCombatRecord } = battleLogSlice.actions;
 export default battleLogSlice.reducer;

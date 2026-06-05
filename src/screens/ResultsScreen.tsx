@@ -1,24 +1,49 @@
 
 import React from "react";
-import { Box, Button, Typography, Paper } from "@mui/material";
+import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 export default function ResultsScreen() {
   const navigate = useNavigate();
+  const combatRecord = useSelector((state: RootState) => state.battleLog.combatRecord);
+  const log = useSelector((state: RootState) => state.battleLog.log);
+
+  const renderEntry = (entry: any, index: number) => {
+    if (typeof entry === "string") {
+      return (
+        <Typography key={index} sx={logLineStyle}>
+          {entry}
+        </Typography>
+      );
+    }
+    // Object entries (settings header, etc.)
+    return (
+      <Box key={index} sx={{ mb: 1, borderBottom: "1px solid #444", pb: 1 }}>
+        {Object.entries(entry).map(([k, v]) => (
+          <Typography key={k} sx={logLineStyle}>
+            {k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}
+          </Typography>
+        ))}
+      </Box>
+    );
+  };
+
+  const hasRecord = combatRecord && combatRecord.length > 0;
 
   return (
     <Box
       sx={{
         height: "100vh",
         width: "100vw",
-        bgcolor: "#111", // Dark BOT WARS background
+        bgcolor: "#111",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         pt: 4,
       }}
     >
-      {/* Top Label */}
       <Typography
         variant="h3"
         sx={{
@@ -26,48 +51,38 @@ export default function ResultsScreen() {
           fontWeight: "bold",
           fontSize: "30pt",
           color: "white",
-          mb: 4,
+          mb: 2,
         }}
       >
         RESULTS - BOT WARS
       </Typography>
 
-      {/* Scrollable Results Box */}
-      <Paper
-        elevation={3}
+      {log.length > 0 && (
+        <Typography sx={{ color: "#aaa", fontFamily: "Courier New", fontSize: "10pt", mb: 1 }}>
+          {log[log.length - 1]}
+        </Typography>
+      )}
+
+      <Box
         sx={{
-          width: "80%",
-          height: "60%",
-          overflowY: "scroll",
-          p: 3,
-          bgcolor: "white",
+          width: "85%",
+          flex: 1,
+          overflowY: "auto",
+          mb: 10,
+          p: 2,
+          bgcolor: "#1a1a1a",
           border: "2px solid gray",
         }}
       >
-        <Typography
-          sx={{
-            fontFamily: "Courier New",
-            fontSize: "12pt",
-            whiteSpace: "pre-wrap",
-            color: "black",
-          }}
-        >
-{`Combat results will appear here.
+        {hasRecord ? (
+          combatRecord.map((entry, i) => renderEntry(entry, i))
+        ) : (
+          <Typography sx={{ color: "#888", fontFamily: "Courier New", fontSize: "12pt" }}>
+            No combat record available. Run a battle from the Combat screen first.
+          </Typography>
+        )}
+      </Box>
 
-This placeholder screen is ready for integration with your future combat engine.
-
-You can scroll this area and later fill it with:
-• Turn-by-turn logs
-• Damage reports
-• Survivors
-• Victory conditions
-• Summary statistics
-
-For now, this screen is fully functional for navigation and testing.`}
-        </Typography>
-      </Paper>
-
-      {/* Bottom Buttons */}
       <Box
         sx={{
           position: "absolute",
@@ -77,25 +92,24 @@ For now, this screen is fully functional for navigation and testing.`}
           justifyContent: "space-between",
         }}
       >
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/combat")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/combat")}>
           Return to Combat
         </Button>
-
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/navigation")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/navigation")}>
           Build Bots and Armies
         </Button>
       </Box>
     </Box>
   );
 }
+
+const logLineStyle = {
+  fontFamily: "Courier New",
+  fontSize: "11pt",
+  color: "white",
+  whiteSpace: "pre-wrap" as const,
+  lineHeight: 1.6,
+};
 
 const buttonStyle = {
   bgcolor: "darkblue",
@@ -105,7 +119,5 @@ const buttonStyle = {
   fontWeight: "bold",
   color: "white",
   width: "45%",
-  "&:hover": {
-    bgcolor: "#001a66",
-  },
+  "&:hover": { bgcolor: "#001a66" },
 };

@@ -11,7 +11,6 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { db } from "../db/db";
-import { seedDefaults } from "../db/seed";
 import { CHECK_BOT_TOTALS as calcBotTotals } from "../utils/Combat";
   
 export default function BotWorkshopScreen() {
@@ -54,14 +53,13 @@ export default function BotWorkshopScreen() {
     setTotalMove(result.move);
   }, [frame, engine, computer, armor, sensor, weaponMaster, weaponSecondary, weaponBomb]);
 
-  // Seed defaults if empty, then load bot name list
+  const [ordersListNames, setOrdersListNames] = useState<string[]>([]);
+  const [targetingMapNames, setTargetingMapNames] = useState<string[]>([]);
+
   useEffect(() => {
-    async function init() {
-      await seedDefaults();
-      const all = await db.bots.orderBy("name").toArray();
-      setBotNames(all.map((b) => b.name));
-    }
-    init();
+    db.bots.orderBy("name").toArray().then(all => setBotNames(all.map(b => b.name)));
+    db.orderLists.orderBy("name").toArray().then(all => setOrdersListNames(all.map(o => o.name)));
+    db.targetMaps.orderBy("name").toArray().then(all => setTargetingMapNames(all.map(t => t.name)));
   }, []);
 
   async function loadBot(name: string) {
@@ -122,6 +120,11 @@ export default function BotWorkshopScreen() {
         botImage,
         targetMapId: tm.id!,
         ordersListId: ol.id!,
+        slotsUsed: totalSlotsDisplay,
+        totalWeight,
+        totalGold,
+        totalPower,
+        move: totalMove,
       });
       const all = await db.bots.orderBy("name").toArray();
       setBotNames(all.map((b) => b.name));
@@ -613,17 +616,9 @@ export default function BotWorkshopScreen() {
             "Nasty-Nuke = WB 450,250 WD, 9 slots, 0 PC, 450 weight, 1800 cost.",
           ])}
 
-          {renderDropdown("Select Targeting Map:", targetingMap, setTargetingMap, [
-            "Default Targeting Map Range 1",
-            "Default Targeting Map Range 2",
-            "Default Targeting Map Range 3",
-          ])}
+          {renderDropdown("Select Targeting Map:", targetingMap, setTargetingMap, targetingMapNames)}
 
-          {renderDropdown("Select Orders List:", ordersList, setOrdersList, [
-            "Default Orders List 5",
-            "Default Orders List 15",
-            "Default Orders List 25",
-          ])}
+          {renderDropdown("Select Orders List:", ordersList, setOrdersList, ordersListNames)}
 
           {renderDropdown("Select Bot Image:", botImage, setBotImage, [
             "Default Bot Image Small",

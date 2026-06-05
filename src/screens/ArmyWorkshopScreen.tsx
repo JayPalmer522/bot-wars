@@ -30,7 +30,7 @@ export default function ArmyWorkshopScreen() {
 
   // Army bot list
   const [armyBots, setArmyBots] = useState<string[]>([]);
-  const [selectedBotIndex, setSelectedBotIndex] = useState<number | null>(null);
+  const [selectedBotIndices, setSelectedBotIndices] = useState<Set<number>>(new Set());
 
   // Load army and bot names on mount
   useEffect(() => {
@@ -62,18 +62,21 @@ export default function ArmyWorkshopScreen() {
       } else {
         setArmyBots([]);
       }
+      setSelectedBotIndices(new Set());
     }
     loadArmyBots();
   }, [armyName]);
 
-  // Placeholder validation routine
-  function VERIFY_ARMY_CHECK() {
-    return "Bot Valid";
-  }
-
   function handleValidate() {
-    const result = VERIFY_ARMY_CHECK();
-    alert(result);
+    if (!armyName.trim()) {
+      alert("Army Invalid\n\nEvery Army must have a name.");
+      return;
+    }
+    if (armyBots.length !== 20) {
+      alert(`Army Invalid\n\nAn Army must have exactly 20 bots. Current count: ${armyBots.length}.`);
+      return;
+    }
+    alert("Army Valid");
   }
 
   async function handleSave() {
@@ -95,7 +98,15 @@ export default function ArmyWorkshopScreen() {
       botIds.push(bot.id!);
     }
     try {
-      await db.armies.put({ name: armyName.trim(), botIds });
+      const name = armyName.trim();
+      const existing = await db.armies.where("name").equals(name).first();
+      if (existing) {
+        await db.armies.update(existing.id!, { botIds });
+      } else {
+        await db.armies.add({ name, botIds });
+      }
+      const all = await db.armies.orderBy("name").toArray();
+      setArmyNames(all.map(a => a.name));
       alert("Army Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -103,16 +114,25 @@ export default function ArmyWorkshopScreen() {
   }
 
   function addBot() {
+    if (armyBots.length >= 20) {
+      alert("Max 20 bots per Army");
+      return;
+    }
     setArmyBots([...armyBots, selectedBot]);
   }
 
+  function toggleBotSelection(index: number) {
+    setSelectedBotIndices(prev => {
+      const next = new Set(prev);
+      next.has(index) ? next.delete(index) : next.add(index);
+      return next;
+    });
+  }
+
   function removeBot() {
-    if (selectedBotIndex !== null) {
-      const updated = [...armyBots];
-      updated.splice(selectedBotIndex, 1);
-      setArmyBots(updated);
-      setSelectedBotIndex(null);
-    }
+    if (selectedBotIndices.size === 0) return;
+    setArmyBots(armyBots.filter((_, i) => !selectedBotIndices.has(i)));
+    setSelectedBotIndices(new Set());
   }
 
   const renderDropdown = (label, value, setValue, options) => (
@@ -301,12 +321,19 @@ export default function ArmyWorkshopScreen() {
         </Box>
 
         {/* Right Column: Scrollable List */}
+        <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
+          <Typography sx={{
+            fontFamily: "Courier New", fontWeight: "bold", fontSize: "12pt",
+            color: armyBots.length === 20 ? "lightgreen" : "white", mb: "4px",
+          }}>
+            Bots: {armyBots.length} / 20
+          </Typography>
         <Paper
           elevation={3}
           sx={{
             bgcolor: "white",
             border: "2px solid gray",
-            height: "100%",
+            flex: 1,
             overflowY: "scroll",
           }}
         >
@@ -314,21 +341,25 @@ export default function ArmyWorkshopScreen() {
             {armyBots.map((bot, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton
-                  selected={selectedBotIndex === index}
-                  onClick={() => setSelectedBotIndex(index)}
+                  selected={selectedBotIndices.has(index)}
+                  onClick={() => toggleBotSelection(index)}
                   sx={{
                     fontFamily: "Courier New",
                     fontSize: "12pt",
                     fontWeight: "bold",
                     color: "black",
+                    bgcolor: selectedBotIndices.has(index) ? "#c8d8f0 !important" : "white",
+                    py: 0,
+                    minHeight: "unset",
                   }}
                 >
-                  {bot}
+                  {(index + 1).toString().padStart(2, "0")}. {bot}
                 </ListItemButton>
               </ListItem>
             ))}
           </List>
         </Paper>
+        </Box>
       </Box>
 
       {/* Bottom Buttons */}

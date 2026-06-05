@@ -1,5 +1,5 @@
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Button,
@@ -22,6 +22,7 @@ export default function OrdersListWorkshopScreen() {
 
   // Orders list name
   const [ordersListName, setOrdersListName] = useState("");
+  const [ordersListNames, setOrdersListNames] = useState<string[]>([]);
 
   // Command selection
   const [selectedCommand, setSelectedCommand] = useState("Move Forward 1");
@@ -29,6 +30,15 @@ export default function OrdersListWorkshopScreen() {
   // List of commands added
   const [commands, setCommands] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    db.orderLists.orderBy("name").toArray().then(all => setOrdersListNames(all.map(o => o.name)));
+  }, []);
+
+  async function loadOrdersList(name: string) {
+    const list = await db.orderLists.where("name").equals(name).first();
+    if (list) setCommands(list.commands);
+  }
 
   // Placeholder validation routine
   function VERIFY_ORDERS_LIST_CHECK() {
@@ -124,12 +134,15 @@ async function handleSelectOrderList(id) {
       return;
     }
     try {
-      await db.orderLists.put({ name: ordersListName.trim(), commands });
-//	        message: "." +  name: ordersListName.trim() + "." + commands + ".";
-
-
-//		errorMessages += "." +  name: ordersListName.trim() + "." + commands + ".";
-//	  message: errorMessages;
+      const name = ordersListName.trim();
+      const existing = await db.orderLists.where("name").equals(name).first();
+      if (existing) {
+        await db.orderLists.update(existing.id!, { commands });
+      } else {
+        await db.orderLists.add({ name, commands });
+      }
+      const all = await db.orderLists.orderBy("name").toArray();
+      setOrdersListNames(all.map(o => o.name));
       alert("Orders List Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -263,10 +276,14 @@ async function handleSelectOrderList(id) {
           </Typography>
           <Autocomplete
             value={ordersListName}
-            onChange={(event, newValue) => setOrdersListName(newValue || "")}
+            onChange={(event, newValue) => {
+              const name = newValue || "";
+              setOrdersListName(name);
+              if (name && ordersListNames.includes(name)) loadOrdersList(name);
+            }}
             inputValue={ordersListName}
             onInputChange={(event, newInputValue) => setOrdersListName(newInputValue)}
-            options={["Default Orders List 5", "Default Orders List 15", "Default Orders List 25"]}
+            options={ordersListNames}
             freeSolo
             renderInput={(params) => (
               <TextField
@@ -400,7 +417,7 @@ async function handleSelectOrderList(id) {
           Validate Orders List
         </Button>
 
-        <Button variant="contained" sx={bottomButtonStyle} onClick={saveOrdersList(name, commands)}>
+        <Button variant="contained" sx={bottomButtonStyle} onClick={handleSave}>
           Save Orders List
         </Button>
 
