@@ -311,6 +311,11 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
     const ALL_BOTS_IN_COMBAT_LIST = CREATE_ALL_BOTS_IN_COMBAT_LIST(bots1, bots2);
     logInfo(COMBAT_RECORD, `Combat order set — ${ALL_BOTS_IN_COMBAT_LIST.length} bots total, first turn: Army ${ALL_BOTS_IN_COMBAT_LIST[0]?.army}`);
 
+    // Snapshot initial placement before the combat loop mutates the map arrays
+    const initialBotStatsMap = buildBotStatsMap(ALL_BOTS_IN_COMBAT_LIST);
+    const [, initialGameMapBots, , initialGameMapFacing] =
+      STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, initialBotStatsMap);
+
     const battleId = `battle_${Date.now()}`;
     await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 
@@ -324,7 +329,16 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
 	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
 	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
 	
-    return { success: true, battleId, combatRecord: COMBAT_RECORD };
+    return {
+      success: true,
+      battleId,
+      combatRecord: COMBAT_RECORD,
+      initialMapState: {
+        allBotsInCombatList: ALL_BOTS_IN_COMBAT_LIST,
+        gameMapBots: initialGameMapBots,
+        gameMapFacing: initialGameMapFacing,
+      },
+    };
   } catch (error) {
     logError(COMBAT_RECORD, "BEGIN_COMBAT fatal error", error);
     return { success: false, message: "Failed to initialize combat.", combatRecord: COMBAT_RECORD };
@@ -594,9 +608,9 @@ export async function EXECUTE_ORDERS_LIST(
       acquiredTargetsMap[botId] = acquired;
       if (acquired.length > 0) {
         const spaces = acquired.map(i => i + 1).join(", ");
-        COMBAT_RECORD.push(`Bot ${botId} activates targeting map — ${acquired.length} target(s) acquired in range ${tmRange} at space(s): ${spaces}.`);
+        COMBAT_RECORD.push(`Bot ${botId} on space ${tmIdx + 1} activates targeting map — ${acquired.length} target(s) acquired in range ${tmRange} at space(s): ${spaces}.`);
       } else {
-        COMBAT_RECORD.push(`Bot ${botId} activates targeting map — no targets found in range ${tmRange}.`);
+        COMBAT_RECORD.push(`Bot ${botId} on space ${tmIdx + 1} activates targeting map — no targets found in range ${tmRange}.`);
       }
 
     } else if (cmd === "If Any Enemies in Range ...") {
@@ -663,8 +677,23 @@ export async function EXECUTE_ORDERS_LIST(
         await CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
 
     } else if (cmd === "Activate Self-Destruct") {
-      COMBAT_RECORD.push(`Bot ${botId} activates self-destruct!`);
       const idx = findBotIndex(GAME_MAP_BOTS, botId);
+      // Scan for all bots within Chebyshev distance 2 BEFORE clearing self from map
+      const nearbyBotSpaces = [];
+      if (idx !== -1) {
+        const selfCol = idx % 10, selfRow = Math.floor(idx / 10);
+        for (let ni = 0; ni < GAME_MAP_BOTS.length; ni++) {
+          if (ni === idx || GAME_MAP_BOTS[ni] === "0") continue;
+          const col = ni % 10, row = Math.floor(ni / 10);
+          if (Math.max(Math.abs(col - selfCol), Math.abs(row - selfRow)) <= 2) {
+            nearbyBotSpaces.push(ni + 1);
+          }
+        }
+      }
+      const nearbyStr = nearbyBotSpaces.length > 0
+        ? `Nearby bots at space(s): ${nearbyBotSpaces.join(", ")}.`
+        : `No nearby bots.`;
+      COMBAT_RECORD.push(`Bot ${botId} activates self-destruct on space ${idx + 1}! ${nearbyStr}`);
       if (idx !== -1) {
         GAME_MAP_BOTS[idx]   = "0";
         GAME_MAP_FACING[idx] = "0";
@@ -739,7 +768,7 @@ export async function CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP
     [GAME_MAP_FACING[idx],  GAME_MAP_FACING[backIdx]]  = [GAME_MAP_FACING[backIdx], GAME_MAP_FACING[idx]];
     [GAME_MAP_DAMAGE[idx],  GAME_MAP_DAMAGE[backIdx]]  = [GAME_MAP_DAMAGE[backIdx], GAME_MAP_DAMAGE[idx]];
 
-    COMBAT_RECORD.push(`Bot ${botId} moves backward to space ${backIdx + 1}.`);
+    COMBAT_RECORD.push(`Move Bot ${botId} backward from space ${idx + 1} to ${backIdx + 1} facing ${facing}.`);
   }
 
   return [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE];

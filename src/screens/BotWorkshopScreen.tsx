@@ -32,7 +32,7 @@ export default function BotWorkshopScreen() {
   const [weaponBomb, setWeaponBomb] = useState("NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost.");
   const [targetingMap, setTargetingMap] = useState("Default Targeting Map Range 1");
   const [ordersList, setOrdersList] = useState("Default Orders List 5");
-  const [botImage, setBotImage] = useState("Default Bot Image Small");
+  const [botImage, setBotImage] = useState("SmallBot");
 
   // Bot totals display
   const [totalSlotsDisplay, setTotalSlotsDisplay] = useState("0/0");
@@ -621,9 +621,14 @@ export default function BotWorkshopScreen() {
           {renderDropdown("Select Orders List:", ordersList, setOrdersList, ordersListNames)}
 
           {renderDropdown("Select Bot Image:", botImage, setBotImage, [
-            "Default Bot Image Small",
-            "Default Bot Image Medium",
-            "Default Bot Image Large",
+            "SmallBot",
+            "SmallMedBot",
+            "SmallShootingBomb",
+            "MedBot",
+            "MedBigBot",
+            "BigBot",
+            "LargeBomb",
+            "LargeShootingBomb",
           ])}
         </Box>
       </Box>

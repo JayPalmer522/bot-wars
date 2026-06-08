@@ -1,5 +1,5 @@
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Button,
@@ -13,6 +13,7 @@ import { useNavigate } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { addLogEntry, clearLog, setCombatRecord } from "../store/battleLogSlice";
 import { BEGIN_COMBAT, SHOW_COMBAT_RECORD } from "../utils/Combat";
+import { BEGIN_ANIMATION, REPLAY_COMBAT_RECORD, SET_MICRO_DELAY, SET_MACRO_DELAY } from "../utils/Animation";
 import { db } from "../db/db";
 
 export default function CombatScreen() {
@@ -24,16 +25,33 @@ export default function CombatScreen() {
   const [army2, setArmy2] = useState("Default Army Small");
   const [armyOptions, setArmyOptions] = useState<string[]>([]);
 
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
   useEffect(() => {
     db.armies.toArray().then(armies => {
       setArmyOptions(armies.map(a => a.name));
     });
   }, []);
 
+  useEffect(() => {
+    if (canvasRef.current) {
+      BEGIN_ANIMATION(canvasRef.current);
+    }
+  }, []);
+
   const [maxGold, setMaxGold] = useState("No limits");
   const [maxWeight, setMaxWeight] = useState("No limits");
   const [maxPower, setMaxPower] = useState("No limits");
   const [combatRecord, setLocalCombatRecord] = useState([]);
+
+  const [microDelay, setMicroDelay] = useState(200);
+  const [macroDelay, setMacroDelay] = useState(500);
+
+  const MICRO_PRESETS = [0, 100, 200, 500, 1000];
+  const MACRO_PRESETS = [0, 200, 500, 1000, 2000];
+
+  const applyMicroDelay = (ms: number) => { setMicroDelay(ms); SET_MICRO_DELAY(ms); };
+  const applyMacroDelay = (ms: number) => { setMacroDelay(ms); SET_MACRO_DELAY(ms); };
 
   const limits = [
     "No limits",
@@ -75,7 +93,11 @@ export default function CombatScreen() {
       dispatch(clearLog());
       dispatch(addLogEntry("Battle ID: " + result.battleId));
       dispatch(setCombatRecord(result.combatRecord || []));
-      navigate("/results");
+
+      // Replay combat — draws initial placement then animates each log event
+      if (canvasRef.current && result.initialMapState) {
+        REPLAY_COMBAT_RECORD(canvasRef.current, result.combatRecord || [], result.initialMapState);
+      }
     } else {
       alert(result.message);
     }
@@ -130,26 +152,6 @@ export default function CombatScreen() {
         ))}
       </Select>
     </FormControl>
-  );
-
-  // Render a single GAME MAP SQUARE
-  const renderSquare = (num) => (
-    <Box
-      key={num}
-      sx={{
-        width: 40,
-        height: 40,
-        bgcolor: "lightgreen",
-        border: "2px solid gray",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        fontFamily: "Courier New",
-        fontSize: "10pt",
-      }}
-    >
-      {num}
-    </Box>
   );
 
   return (
@@ -212,16 +214,21 @@ export default function CombatScreen() {
             }}
           >
             {SHOW_COMBAT_RECORD === "TRUE" && combatRecord.length > 0 ? (
-              combatRecord.map((record, index) => (
-                <div key={index}>
-                  {Object.entries(record).map(([key, value]) => (
-                    <div key={key}>
-                      {key}: {typeof value === 'object' ? JSON.stringify(value) : String(value)}
-                    </div>
-                  ))}
-                  {index < combatRecord.length - 1 && <hr style={{ borderColor: 'gray', margin: '5px 0' }} />}
-                </div>
-              ))
+              combatRecord.map((record, index) => {
+                if (typeof record === "string") {
+                  return <div key={index} style={{ marginBottom: "2px" }}>{record}</div>;
+                }
+                // Settings header object
+                return (
+                  <div key={index} style={{ marginBottom: "6px", borderBottom: "1px solid #444", paddingBottom: "4px" }}>
+                    {Object.entries(record).map(([key, value]) => (
+                      <div key={key}>
+                        {key}: {typeof value === 'object' ? JSON.stringify(value) : String(value)}
+                      </div>
+                    ))}
+                  </div>
+                );
+              })
             ) : (
               SHOW_COMBAT_RECORD === "TRUE"
                 ? "Combat Record will appear here when combat begins"
@@ -231,19 +238,12 @@ export default function CombatScreen() {
         </Box>
 
         {/* GAME MAP */}
-        <Box
-          sx={{
-            display: "grid",
-            gridTemplateColumns: "repeat(10, 40px)",
-            gridTemplateRows: "repeat(10, 40px)",
-            gap: "3px",
-            border: "2px solid gray",
-            padding: "3px",
-            bgcolor: "#222",
-          }}
-        >
-          {Array.from({ length: 100 }).map((_, i) => renderSquare(i + 1))}
-        </Box>
+        <canvas
+          ref={canvasRef}
+          width={433}
+          height={433}
+          style={{ border: "2px solid gray", display: "block" }}
+        />
 
         {/* RIGHT SIDE CONTROLS */}
         <Box sx={{ width: "100%" }}>
@@ -258,6 +258,48 @@ export default function CombatScreen() {
           {renderDropdown("Army 1:", army1, setArmy1, armyOptions)}
 
           {renderDropdown("Army 2:", army2, setArmy2, armyOptions)}
+
+          {/* Micro Delay buttons */}
+          <Typography sx={{ color: "white", fontWeight: "bold", fontSize: "12pt", mb: "4px" }}>
+            Micro Delay:
+          </Typography>
+          <Box sx={{ display: "flex", gap: "4px", mb: 2, flexWrap: "wrap" }}>
+            {MICRO_PRESETS.map(ms => (
+              <Button
+                key={ms}
+                variant="contained"
+                onClick={() => applyMicroDelay(ms)}
+                sx={{
+                  ...delayButtonStyle,
+                  bgcolor: microDelay === ms ? "#0044cc" : "darkblue",
+                  border: microDelay === ms ? "2px solid white" : "2px solid gray",
+                }}
+              >
+                {ms === 0 ? "0" : ms < 1000 ? `${ms / 1000}s` : "1s"}
+              </Button>
+            ))}
+          </Box>
+
+          {/* Macro Delay buttons */}
+          <Typography sx={{ color: "white", fontWeight: "bold", fontSize: "12pt", mb: "4px" }}>
+            Macro Delay:
+          </Typography>
+          <Box sx={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
+            {MACRO_PRESETS.map(ms => (
+              <Button
+                key={ms}
+                variant="contained"
+                onClick={() => applyMacroDelay(ms)}
+                sx={{
+                  ...delayButtonStyle,
+                  bgcolor: macroDelay === ms ? "#0044cc" : "darkblue",
+                  border: macroDelay === ms ? "2px solid white" : "2px solid gray",
+                }}
+              >
+                {ms === 0 ? "0" : ms < 1000 ? `${ms / 1000}s` : `${ms / 1000}s`}
+              </Button>
+            ))}
+          </Box>
         </Box>
       </Box>
 
@@ -324,5 +366,18 @@ const bottomButtonStyle = {
   width: "30%",
   "&:hover": {
     bgcolor: "#001a66",
+  },
+};
+
+const delayButtonStyle = {
+  fontFamily: "Courier New",
+  fontSize: "10pt",
+  fontWeight: "bold",
+  color: "white",
+  minWidth: "42px",
+  height: "32px",
+  padding: "0 6px",
+  "&:hover": {
+    bgcolor: "#0033aa",
   },
 };

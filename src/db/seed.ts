@@ -26,11 +26,10 @@ async function getOrCreateTargetMap(name: string, range: number): Promise<number
 }
 
 export async function seedDefaults(): Promise<void> {
+  // ── Bots (and their prerequisites) ──────────────────────────────────────────
   const botCount = await db.bots.count();
-  if (botCount > 0) return;
-
-  // Seed components first
-  await seedComponents();
+  if (botCount === 0) {
+    await seedComponents();
 
   const ol5  = await getOrCreateOrderList("Default Orders List 5", [
     "Move Forward 1", "Fire Master Weapon", "Turn Right", "Move Forward 1", "Turn Left",
@@ -67,7 +66,7 @@ export async function seedDefaults(): Promise<void> {
       weaponMaster:    "Rubber-Hammer = WM 10 WD, 1 WR, 1 slot, 100 PC, 100 weight, 300 cost.",
       weaponSecondary: "NONE = WS 0 WD, 0 WR, 0 slot, 0 PC, 0 weight, 0 cost.",
       weaponBomb:      "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost.",
-      botImage:        "Default Bot Image Small",
+      botImage:        "SmallBot",
       targetMapId:     tm1,
       ordersListId:    ol5,
       slotsUsed:       "24",
@@ -86,7 +85,7 @@ export async function seedDefaults(): Promise<void> {
       weaponMaster:    "Laser-Cannon = WM 50 WD, 3 WR, 5 slots, 500 PC, 500 weight, 1500 cost.",
       weaponSecondary: "Stone-Slingshot = WS 25 WD, 2 WR, 5 slots, 250 PC, 250 weight, 1000 cost.",
       weaponBomb:      "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost.",
-      botImage:        "Default Bot Image Medium",
+      botImage:        "MedBot",
       targetMapId:     tm2,
       ordersListId:    ol15,
       slotsUsed:       "111",
@@ -105,7 +104,7 @@ export async function seedDefaults(): Promise<void> {
       weaponMaster:    "Antimatter-Cannon = WM 90 WD, 5 WR, 9 slots, 900 PC, 900 weight, 2700 cost.",
       weaponSecondary: "Assassins-Rifle = WS 45 WD, 3 WR, 9 slots, 450 PC, 450 weight, 1800 cost.",
       weaponBomb:      "Nasty-Nuke = WB 450,250 WD, 9 slots, 0 PC, 450 weight, 1800 cost.",
-      botImage:        "Default Bot Image Large",
+      botImage:        "BigBot",
       targetMapId:     tm3,
       ordersListId:    ol25,
       slotsUsed:       "262",
@@ -115,6 +114,23 @@ export async function seedDefaults(): Promise<void> {
       move:            "3",
     },
   ]);
+  } // end botCount === 0
+
+  // ── Armies ───────────────────────────────────────────────────────────────────
+  const armyCount = await db.armies.count();
+  if (armyCount === 0) {
+    const smallBot  = await db.bots.where("name").equals("Default Bot Small").first();
+    const medBot    = await db.bots.where("name").equals("Default Bot Medium").first();
+    const largeBot  = await db.bots.where("name").equals("Default Bot Large").first();
+
+    if (smallBot && medBot && largeBot) {
+      await db.armies.bulkAdd([
+        { name: "Default Army Small",  botIds: Array(20).fill(smallBot.id!) },
+        { name: "Default Army Medium", botIds: Array(20).fill(medBot.id!) },
+        { name: "Default Army Large",  botIds: Array(20).fill(largeBot.id!) },
+      ]);
+    }
+  }
 }
 
 async function seedComponents(): Promise<void> {
@@ -218,4 +234,26 @@ async function seedComponents(): Promise<void> {
     { name: "Mushroom-Cloud", wd: 400, slots: 8, pc: 0, weight: 400, cost: 1600 },
     { name: "Nasty-Nuke", wd: 450, slots: 9, pc: 0, weight: 450, cost: 1800 },
   ]);
+}
+
+const VALID_BOT_IMAGES = new Set([
+  "SmallBot", "SmallMedBot", "SmallShootingBomb",
+  "MedBot", "MedBigBot",
+  "BigBot", "LargeBomb", "LargeShootingBomb",
+]);
+
+const LEGACY_IMAGE_MAP: Record<string, string> = {
+  "Default Bot Image Small":  "SmallBot",
+  "Default Bot Image Medium": "MedBot",
+  "Default Bot Image Large":  "BigBot",
+};
+
+export async function migrateExistingData(): Promise<void> {
+  const bots = await db.bots.toArray();
+  for (const bot of bots) {
+    if (!VALID_BOT_IMAGES.has(bot.botImage)) {
+      const fixed = LEGACY_IMAGE_MAP[bot.botImage] ?? "SmallBot";
+      await db.bots.update(bot.id!, { botImage: fixed });
+    }
+  }
 }

@@ -58,7 +58,8 @@ src/
     TargetingMapWorkshopScreen.tsx # Set targeting priorities (7x7 grid) — writes db
     CombatScreen.tsx              # Pick armies, set limits, calls BEGIN_COMBAT, dispatches setCombatRecord
     ResultsScreen.tsx             # Battle log display — reads combatRecord from Redux store
-Graphics/                         # 116 PNG/PSD sprite assets
+public/
+  Graphics/                       # 116 PNG/PSD sprite assets — served at /Graphics/*
 ```
 
 ## Routing
