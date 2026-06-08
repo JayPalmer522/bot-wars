@@ -10,8 +10,155 @@
  * Start an animation sequence.
  */
 export function BEGIN_ANIMATION() {
-  console.log("BEGIN_ANIMATION called");
+
+	console.log("BEGIN_ANIMATION called");
+	
 }
+	
+
+/// JavaScript
+//var MyImage = "./Graphics/Bullet_All_DE.png"; // changes often!
+//const img = document.getElementById('MyImage');
+//const xPosition = 150; // X coordinate in pixels
+//const yPosition = 200; // Y coordinate in pixels
+//img.style.left = xPosition + 'px';
+//img.style.top = yPosition + 'px';
+//img.style.display = 'block';
+
+////// sprite graphics 
+/*
+*
+*  FILES:
+C:\JayPalmer\Games\bot-wars\Graphics
+Bullet_All_DE.png
+Bullet_All_DN.png
+Bullet_All_DNE.png
+Bullet_All_DNW.png
+Bullet_All_DS.png
+Bullet_All_DSE.png
+Bullet_All_DSW.png
+Bullet_All_DW.png
+B_I_BigBot_P1_DE.png
+B_I_BigBot_P1_DN.png
+B_I_BigBot_P1_DNE.png
+B_I_BigBot_P1_DNW.png
+B_I_BigBot_P1_DS.png
+B_I_BigBot_P1_DSE.png
+B_I_BigBot_P1_DSW.png
+B_I_BigBot_P1_DW.png
+B_I_BigBot_P2_DE.png
+B_I_BigBot_P2_DN.png
+B_I_BigBot_P2_DNE.png
+B_I_BigBot_P2_DNW.png
+B_I_BigBot_P2_DS.png
+B_I_BigBot_P2_DSE.png
+B_I_BigBot_P2_DSW.png
+B_I_BigBot_P2_DW.png
+B_I_LargeBomb_P1_DE.png
+B_I_LargeBomb_P1_DN.png
+B_I_LargeBomb_P1_DNE.png
+B_I_LargeBomb_P1_DNW.png
+B_I_LargeBomb_P1_DS.png
+B_I_LargeBomb_P1_DSE.png
+B_I_LargeBomb_P1_DSW.png
+B_I_LargeBomb_P1_DW.png
+B_I_LargeBomb_P2_DE.png
+B_I_LargeBomb_P2_DN.png
+B_I_LargeBomb_P2_DNE.png
+B_I_LargeBomb_P2_DNW.png
+B_I_LargeBomb_P2_DS.png
+B_I_LargeBomb_P2_DSE.png
+B_I_LargeBomb_P2_DSW.png
+B_I_LargeBomb_P2_DW.png
+B_I_LargeShootingBomb_P1_DE.png
+B_I_LargeShootingBomb_P1_DN.png
+B_I_LargeShootingBomb_P1_DNE.png
+B_I_LargeShootingBomb_P1_DNW.png
+B_I_LargeShootingBomb_P1_DS.png
+B_I_LargeShootingBomb_P1_DSE.png
+B_I_LargeShootingBomb_P1_DSW.png
+B_I_LargeShootingBomb_P1_DW.png
+B_I_LargeShootingBomb_P2_DE.png
+B_I_LargeShootingBomb_P2_DN.png
+B_I_LargeShootingBomb_P2_DNE.png
+B_I_LargeShootingBomb_P2_DNW.png
+B_I_LargeShootingBomb_P2_DS.png
+B_I_LargeShootingBomb_P2_DSE.png
+B_I_LargeShootingBomb_P2_DSW.png
+B_I_LargeShootingBomb_P2_DW.png
+B_I_MedBigBot_P1_DE.png
+B_I_MedBigBot_P1_DN.png
+B_I_MedBigBot_P1_DNE.png
+B_I_MedBigBot_P1_DNW.png
+B_I_MedBigBot_P1_DS.png
+B_I_MedBigBot_P1_DSE.png
+B_I_MedBigBot_P1_DSW.png
+B_I_MedBigBot_P1_DW.png
+B_I_MedBigBot_P2_DE.png
+B_I_MedBigBot_P2_DN.png
+B_I_MedBigBot_P2_DNE.png
+B_I_MedBigBot_P2_DNW.png
+B_I_MedBigBot_P2_DS.png
+B_I_MedBigBot_P2_DSE.png
+B_I_MedBigBot_P2_DSW.png
+B_I_MedBigBot_P2_DW.png
+B_I_MedBot_P1_DE.png
+B_I_MedBot_P1_DN.png
+B_I_MedBot_P1_DNE.png
+B_I_MedBot_P1_DNW.png
+B_I_MedBot_P1_DS.png
+B_I_MedBot_P1_DSE.png
+B_I_MedBot_P1_DSW.png
+B_I_MedBot_P1_DW.png
+B_I_MedBot_P2_DE.png
+B_I_MedBot_P2_DN.png
+B_I_MedBot_P2_DNE.png
+B_I_MedBot_P2_DNW.png
+B_I_MedBot_P2_DS.png
+B_I_MedBot_P2_DSE.png
+B_I_MedBot_P2_DSW.png
+B_I_MedBot_P2_DW.png
+B_I_SmallBot_P1_DE.png
+B_I_SmallBot_P1_DN.png
+B_I_SmallBot_P1_DNE.png
+B_I_SmallBot_P1_DNW.png
+B_I_SmallBot_P1_DS.png
+B_I_SmallBot_P1_DSE.png
+B_I_SmallBot_P1_DSW.png
+B_I_SmallBot_P1_DW.png
+B_I_SmallBot_P2_DE.png
+B_I_SmallBot_P2_DN.png
+B_I_SmallBot_P2_DNE.png
+B_I_SmallBot_P2_DNW.png
+B_I_SmallBot_P2_DS.png
+B_I_SmallBot_P2_DSE.png
+B_I_SmallBot_P2_DSW.png
+B_I_SmallBot_P2_DW.png
+B_I_SmallMedBot_P1_DN.png
+B_I_SmallShootingBomb_P1_DW.png
+B_I_SmallShootingBomb_P2_DW.png
+ComBatMapCover.png
+ComBatMapCover1.png
+ComBatMapCover2.png
+ComBatMapCover3.png
+Empty_Green.png
+
+*
+*    { GAME MAP }
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: "repeat(10, 40px)",
+            gridTemplateRows: "repeat(10, 40px)",
+            gap: "3px",
+            border: "2px solid gray",
+            padding: "3px",
+            bgcolor: "#222",
+          }}
+*/
+
+
+// On the COMBAT SCREEN, there is a GAME MAP of 100 squares, aranged in a 10 x 10 grid. Each is 40 px tall and 40 px wide, with a gap of 3 px between them. In the Graphics folder are many .png files including the file "Empty_Green.png". Using sprite graphics, from Animation.js, cover each of those 100 squares with the image "Empty_Green.png".
 
 /**
  * ANI_PLACE_BOTS

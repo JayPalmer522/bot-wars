@@ -315,6 +315,15 @@ export async function BEGIN_COMBAT(army1Id, army2Id, settings = {}) {
     await MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
 
     logInfo(COMBAT_RECORD, `BEGIN_COMBAT complete — battleId: ${battleId}`);
+	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
+	logInfo(COMBAT_RECORD, `THANK YOU FOR PLAYING BOT-WARS!`);
+	logInfo(COMBAT_RECORD, `Hope you enjoyed it!`);
+	logInfo(COMBAT_RECORD, `Be sure to check out JAYPALMERBOOKS.COM!`);
+	logInfo(COMBAT_RECORD, `May every victory be yours! -- Jay Palmer`);
+	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
+	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
+	logInfo(COMBAT_RECORD, `XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`);
+	
     return { success: true, battleId, combatRecord: COMBAT_RECORD };
   } catch (error) {
     logError(COMBAT_RECORD, "BEGIN_COMBAT fatal error", error);
@@ -1067,3 +1076,5 @@ export async function CHECK_WIN_CONDITION() {
 export async function END_COMBAT(winnerId, loserId) {
   return { success: true };
 }
+
+  
