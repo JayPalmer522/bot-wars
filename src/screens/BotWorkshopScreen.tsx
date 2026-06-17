@@ -10,12 +10,15 @@ import {
   MenuItem,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 import { db } from "../db/db";
 import { CHECK_BOT_TOTALS as calcBotTotals } from "../utils/Combat";
   
 export default function BotWorkshopScreen() {
   const navigate = useNavigate();
-  
+  const userId = useSelector((state: RootState) => state.auth.userId);
+
   // Name of Bot
   const [botName, setBotName] = useState("");
   const [botId, setBotId] = useState<number | undefined>(undefined);
@@ -56,14 +59,17 @@ export default function BotWorkshopScreen() {
   const [ordersListNames, setOrdersListNames] = useState<string[]>([]);
   const [targetingMapNames, setTargetingMapNames] = useState<string[]>([]);
 
+  useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
+
   useEffect(() => {
-    db.bots.orderBy("name").toArray().then(all => setBotNames(all.map(b => b.name)));
-    db.orderLists.orderBy("name").toArray().then(all => setOrdersListNames(all.map(o => o.name)));
-    db.targetMaps.orderBy("name").toArray().then(all => setTargetingMapNames(all.map(t => t.name)));
-  }, []);
+    if (!userId) return;
+    db.bots.where("userId").equals(userId).toArray().then(all => setBotNames(all.map(b => b.name).sort()));
+    db.orderLists.where("userId").equals(userId).toArray().then(all => setOrdersListNames(all.map(o => o.name).sort()));
+    db.targetMaps.where("userId").equals(userId).toArray().then(all => setTargetingMapNames(all.map(t => t.name).sort()));
+  }, [userId]);
 
   async function loadBot(name: string) {
-    const bot = await db.bots.where("name").equals(name).first();
+    const bot = await db.bots.where("[userId+name]").equals([userId, name]).first();
     if (!bot) return;
     setBotId(bot.id);
     setFrame(bot.frame);
@@ -108,6 +114,7 @@ export default function BotWorkshopScreen() {
     try {
       await db.bots.put({
         ...(botId !== undefined ? { id: botId } : {}),
+        userId,
         name: botName.trim(),
         frame,
         engine,
@@ -126,8 +133,8 @@ export default function BotWorkshopScreen() {
         totalPower,
         move: totalMove,
       });
-      const all = await db.bots.orderBy("name").toArray();
-      setBotNames(all.map((b) => b.name));
+      const all = await db.bots.where("userId").equals(userId).toArray();
+      setBotNames(all.map((b) => b.name).sort());
       alert("Bot Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -200,6 +207,8 @@ export default function BotWorkshopScreen() {
       </Select>
     </FormControl>
   );
+
+  if (userId === null) return null;
 
   return (
     <Box

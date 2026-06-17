@@ -11,6 +11,7 @@ import OrdersListWorkshopScreen from "./screens/OrdersListWorkshopScreen";
 import TargetingMapWorkshopScreen from "./screens/TargetingMapWorkshopScreen";
 import CombatScreen from "./screens/CombatScreen";
 import ResultsScreen from "./screens/ResultsScreen";
+import PlayerStatsScreen from "./screens/PlayerStatsScreen";
 
 export default function App() {
   return (
@@ -26,8 +27,8 @@ export default function App() {
         <Route path="/targeting" element={<TargetingMapWorkshopScreen />} />
         <Route path="/combat" element={<CombatScreen />} />
         <Route path="/results" element={<ResultsScreen />} />
+        <Route path="/stats" element={<PlayerStatsScreen />} />
       </Routes>
     </BrowserRouter>
   );
 }
-

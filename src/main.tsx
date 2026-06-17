@@ -6,10 +6,9 @@ import { ThemeProvider } from "@mui/material";
 import theme from "./theme";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
-import { seedDefaults, migrateExistingData } from "./db/seed";
+import { seedDefaults } from "./db/seed";
 
 seedDefaults().catch(console.error);
-migrateExistingData().catch(console.error);
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode>

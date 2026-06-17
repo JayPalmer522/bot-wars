@@ -15,11 +15,13 @@ import {
   ListItemButton,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 import { db } from "../db/db";
 
 export default function OrdersListWorkshopScreen() {
   const navigate = useNavigate();
-
+  const userId = useSelector((state: RootState) => state.auth.userId);
   // Orders list name
   const [ordersListName, setOrdersListName] = useState("");
   const [ordersListNames, setOrdersListNames] = useState<string[]>([]);
@@ -31,12 +33,15 @@ export default function OrdersListWorkshopScreen() {
   const [commands, setCommands] = useState<string[]>([]);
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
 
+  useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
+
   useEffect(() => {
-    db.orderLists.orderBy("name").toArray().then(all => setOrdersListNames(all.map(o => o.name)));
-  }, []);
+    if (!userId) return;
+    db.orderLists.where("userId").equals(userId).toArray().then(all => setOrdersListNames(all.map(o => o.name).sort()));
+  }, [userId]);
 
   async function loadOrdersList(name: string) {
-    const list = await db.orderLists.where("name").equals(name).first();
+    const list = await db.orderLists.where("[userId+name]").equals([userId, name]).first();
     if (list) setCommands(list.commands);
   }
 
@@ -135,14 +140,14 @@ async function handleSelectOrderList(id) {
     }
     try {
       const name = ordersListName.trim();
-      const existing = await db.orderLists.where("name").equals(name).first();
+      const existing = await db.orderLists.where("[userId+name]").equals([userId, name]).first();
       if (existing) {
         await db.orderLists.update(existing.id!, { commands });
       } else {
-        await db.orderLists.add({ name, commands });
+        await db.orderLists.add({ userId, name, commands });
       }
-      const all = await db.orderLists.orderBy("name").toArray();
-      setOrdersListNames(all.map(o => o.name));
+      const all = await db.orderLists.where("userId").equals(userId).toArray();
+      setOrdersListNames(all.map(o => o.name).sort());
       alert("Orders List Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -241,6 +246,8 @@ async function handleSelectOrderList(id) {
       </Select>
     </FormControl>
   );
+
+  if (userId === null) return null;
 
   return (
     <Box

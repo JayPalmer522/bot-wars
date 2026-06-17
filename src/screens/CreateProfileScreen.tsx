@@ -2,10 +2,14 @@
 import React, { useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { CREATE_PROFILE } from "../utils/Profiles";
+import { setCurrentUser } from "../store/authSlice";
+import { seedUserDefaults } from "../db/userDefaults";
 
 export default function CreateProfileScreen() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [profileName, setProfileName] = useState("");
   const [password, setPassword] = useState("");
   const [email, setEmail] = useState("");
@@ -16,11 +20,12 @@ export default function CreateProfileScreen() {
     setSaving(true);
     setStatusMsg("");
     const result = await CREATE_PROFILE(profileName, email, password);
-    setSaving(false);
     if (result.success) {
-      setStatusMsg("Profile created! Redirecting to login...");
-      setTimeout(() => navigate("/"), 1200);
+      await seedUserDefaults(result.userId!);
+      dispatch(setCurrentUser({ userId: result.userId!, username: profileName }));
+      navigate("/navigation");
     } else {
+      setSaving(false);
       setStatusMsg(result.message);
     }
   };
@@ -59,7 +64,7 @@ export default function CreateProfileScreen() {
             value={profileName}
             onChange={(e) => setProfileName(e.target.value)}
             inputProps={{ maxLength: 30, style: inputInner }}
-            sx={{ bgcolor: "white" }}
+            sx={textFieldStyle}
           />
         </Box>
 
@@ -71,7 +76,7 @@ export default function CreateProfileScreen() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             inputProps={{ maxLength: 50, style: inputInner }}
-            sx={{ bgcolor: "white" }}
+            sx={textFieldStyle}
           />
         </Box>
 
@@ -83,12 +88,12 @@ export default function CreateProfileScreen() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             inputProps={{ maxLength: 100, style: inputInner }}
-            sx={{ bgcolor: "white" }}
+            sx={textFieldStyle}
           />
         </Box>
 
         {statusMsg && (
-          <Typography sx={{ color: statusMsg.startsWith("Profile created") ? "lightgreen" : "#ff8888", fontFamily: "Courier New", fontSize: "11pt", textAlign: "center" }}>
+          <Typography sx={{ color: "#ff8888", fontFamily: "Courier New", fontSize: "11pt", textAlign: "center" }}>
             {statusMsg}
           </Typography>
         )}
@@ -106,8 +111,8 @@ export default function CreateProfileScreen() {
         <Button variant="contained" onClick={handleSave} disabled={saving} sx={buttonStyle}>
           {saving ? "Saving..." : "Save Profile"}
         </Button>
-        <Button variant="contained" onClick={() => navigate("/navigation")} sx={buttonStyle}>
-          Build Bots and Armies
+        <Button variant="contained" onClick={() => navigate("/")} sx={buttonStyle}>
+          Back to Login
         </Button>
       </Box>
     </Box>
@@ -124,6 +129,21 @@ const labelStyle = {
 const inputInner = {
   fontFamily: "Courier New",
   fontSize: "12pt",
+  color: "#111",
+};
+
+const textFieldStyle = {
+  bgcolor: "white",
+  borderRadius: "4px",
+  "& .MuiOutlinedInput-root": {
+    bgcolor: "white",
+    "& fieldset": { borderColor: "#888" },
+    "&:hover fieldset": { borderColor: "#aaa" },
+    "&.Mui-focused fieldset": { borderColor: "#aaa" },
+  },
+  "& .MuiInputBase-input": {
+    color: "#111",
+  },
 };
 
 const buttonStyle = {

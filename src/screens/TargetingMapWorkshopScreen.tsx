@@ -16,13 +16,16 @@ import {
   DialogActions,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 import { db } from "../db/db";
 
 export default function TargetingMapWorkshopScreen() {
   const navigate = useNavigate();
-
+  const userId = useSelector((state: RootState) => state.auth.userId);
   // Name of Targeting Map
   const [mapName, setMapName] = useState("");
+  const [mapNames, setMapNames] = useState<string[]>([]);
 
   // Range buttons
   const [range, setRange] = useState(3);
@@ -42,6 +45,24 @@ export default function TargetingMapWorkshopScreen() {
   );
   const [grid, setGrid] = useState(emptyGrid);
 
+  useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
+
+  useEffect(() => {
+    if (!userId) return;
+    db.targetMaps.where("userId").equals(userId).toArray().then(all =>
+      setMapNames(all.map(m => m.name).sort())
+    );
+  }, [userId]);
+
+  async function loadMap(name: string) {
+    const map = await db.targetMaps.where("[userId+name]").equals([userId, name]).first();
+    if (map) {
+      setRange(map.range);
+      setGrid(map.grid);
+      setTS_COUNT(1);
+    }
+  }
+
   // Placeholder validation routine
   function VERIFY_TARGETING_MAP() {
     return "Orders List Valid";
@@ -58,7 +79,15 @@ export default function TargetingMapWorkshopScreen() {
       return;
     }
     try {
-      await db.targetMaps.put({ name: mapName.trim(), range, grid });
+      const name = mapName.trim();
+      const existing = await db.targetMaps.where("[userId+name]").equals([userId, name]).first();
+      if (existing) {
+        await db.targetMaps.update(existing.id!, { range, grid });
+      } else {
+        await db.targetMaps.add({ userId, name, range, grid });
+      }
+      const all = await db.targetMaps.where("userId").equals(userId).toArray();
+      setMapNames(all.map(m => m.name).sort());
       alert("Targeting Map Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -244,6 +273,8 @@ export default function TargetingMapWorkshopScreen() {
     </FormControl>
   );
 
+  if (userId === null) return null;
+
   return (
     <Box
       sx={{
@@ -285,10 +316,14 @@ export default function TargetingMapWorkshopScreen() {
         </Typography>
         <Autocomplete
           value={mapName}
-          onChange={(event, newValue) => setMapName(newValue || "")}
+          onChange={(event, newValue) => {
+            const name = newValue || "";
+            setMapName(name);
+            if (name && mapNames.includes(name)) loadMap(name);
+          }}
           inputValue={mapName}
           onInputChange={(event, newInputValue) => setMapName(newInputValue)}
-          options={["Default Targeting Map Range 1", "Default Targeting Map Range 2", "Default Targeting Map Range 3"]}
+          options={mapNames}
           freeSolo
           renderInput={(params) => (
             <TextField

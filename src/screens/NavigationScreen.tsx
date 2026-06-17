@@ -2,23 +2,25 @@
 import React from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 
 export default function NavigationScreen() {
   const navigate = useNavigate();
+  const username = useSelector((state: RootState) => state.auth.username);
 
   return (
     <Box
       sx={{
         height: "100vh",
         width: "100vw",
-        bgcolor: "#111", // Dark background
+        bgcolor: "#111",
         display: "flex",
         flexDirection: "column",
         alignItems: "center",
         pt: 4,
       }}
     >
-      {/* Top Label */}
       <Typography
         variant="h3"
         sx={{
@@ -26,14 +28,19 @@ export default function NavigationScreen() {
           fontWeight: "bold",
           fontSize: "30pt",
           color: "white",
-          mb: 6,
+          mb: 1,
           bgcolor: "transparent",
         }}
       >
         Navigate through BOT WARS
       </Typography>
 
-      {/* Two Columns of Buttons */}
+      {username && (
+        <Typography sx={{ fontFamily: "Courier New", fontSize: "13pt", color: "#88ccff", mb: 4 }}>
+          Player: {username}
+        </Typography>
+      )}
+
       <Box
         sx={{
           display: "grid",
@@ -42,52 +49,36 @@ export default function NavigationScreen() {
           width: "70%",
         }}
       >
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/bot")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/bot")}>
           Create/Edit a Bot
         </Button>
 
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/army")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/army")}>
           Create/Edit an Army
         </Button>
 
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/orders")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/orders")}>
           Create/Edit an Orders List
         </Button>
 
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/targeting")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/targeting")}>
           Create/Edit a Targeting Map
         </Button>
 
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/combat")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/combat")}>
           Prepare for Combat
         </Button>
 
-        <Button
-          variant="contained"
-          sx={buttonStyle}
-          onClick={() => navigate("/instructions")}
-        >
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/instructions")}>
           View Instructions
+        </Button>
+
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/stats")}>
+          View Player Stats
+        </Button>
+
+        <Button variant="contained" sx={buttonStyle} onClick={() => navigate("/")}>
+          Switch Player / Logout
         </Button>
       </Box>
     </Box>
@@ -106,4 +97,3 @@ const buttonStyle = {
     bgcolor: "#001a66",
   },
 };
-

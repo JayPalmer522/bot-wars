@@ -1,24 +1,44 @@
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useDispatch } from "react-redux";
 import { ATTEMPT_LOGIN } from "../utils/Profiles";
+import { db } from "../db/db";
+import { setCurrentUser } from "../store/authSlice";
 
 export default function SplashScreen() {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
+  const [profilesExist, setProfilesExist] = useState(false);
+
+  useEffect(() => {
+    db.profiles.count().then((count) => {
+      if (count === 0) {
+        navigate("/create-profile");
+      } else {
+        setProfilesExist(true);
+      }
+    }).catch(() => {
+      // DB error (e.g. schema upgrade failure) — show login screen anyway
+      setProfilesExist(true);
+    });
+  }, []);
 
   const handleLogin = async () => {
     const result = await ATTEMPT_LOGIN(username, password);
     if (result.success) {
-      setStatusMsg(`Welcome back, ${result.userData?.username ?? username}!`);
-      setTimeout(() => navigate("/navigation"), 800);
+      dispatch(setCurrentUser({ userId: result.userId!, username: result.userData?.username ?? username }));
+      navigate("/navigation");
     } else {
       setStatusMsg(result.message);
     }
   };
+
+  if (!profilesExist) return null;
 
   return (
     <Box
@@ -54,7 +74,7 @@ export default function SplashScreen() {
             value={username}
             onChange={(e) => setUsername(e.target.value)}
             inputProps={{ maxLength: 30, style: inputInner }}
-            sx={{ bgcolor: "white" }}
+            sx={textFieldStyle}
           />
         </Box>
 
@@ -66,7 +86,7 @@ export default function SplashScreen() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             inputProps={{ maxLength: 30, style: inputInner }}
-            sx={{ bgcolor: "white" }}
+            sx={textFieldStyle}
           />
         </Box>
 
@@ -99,8 +119,13 @@ export default function SplashScreen() {
         <Button variant="contained" onClick={() => navigate("/navigation")} sx={buttonStyle}>
           Build Bots and Armies
         </Button>
-        <Button variant="contained" onClick={() => navigate("/combat")} sx={buttonStyle}>
-          Play Bot-War
+        <Button
+          variant="contained"
+          onClick={() => navigate("/combat")}
+          sx={buttonStyle}
+          disabled={!username.trim()}
+        >
+          Play BOT-WARS
         </Button>
       </Box>
     </Box>
@@ -117,6 +142,21 @@ const labelStyle = {
 const inputInner = {
   fontFamily: "Courier New",
   fontSize: "12pt",
+  color: "#111",
+};
+
+const textFieldStyle = {
+  bgcolor: "white",
+  borderRadius: "4px",
+  "& .MuiOutlinedInput-root": {
+    bgcolor: "white",
+    "& fieldset": { borderColor: "#888" },
+    "&:hover fieldset": { borderColor: "#aaa" },
+    "&.Mui-focused fieldset": { borderColor: "#aaa" },
+  },
+  "& .MuiInputBase-input": {
+    color: "#111",
+  },
 };
 
 const loginButtonStyle = {

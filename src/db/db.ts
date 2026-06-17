@@ -3,12 +3,14 @@ import Dexie, { Table } from "dexie";
 
 export interface OrdersList {
   id?: number;
+  userId: number;
   name: string;
   commands: string[];
 }
 
 export interface TargetMap {
   id?: number;
+  userId: number;
   name: string;
   range: number;
   grid: string[][];
@@ -16,6 +18,7 @@ export interface TargetMap {
 
 export interface Bot {
   id?: number;
+  userId: number;
   name: string;
   frame: string;
   engine: string;
@@ -37,6 +40,7 @@ export interface Bot {
 
 export interface Army {
   id?: number;
+  userId: number;
   name: string;
   botIds: number[];
 }
@@ -49,6 +53,19 @@ export interface BotSensor { id?: number; name: string; targets: number; range: 
 export interface BotMaster { id?: number; name: string; wd: number; wr: number; slots: number; pc: number; weight: number; cost: number; }
 export interface BotSecondary { id?: number; name: string; wd: number; wr: number; slots: number; pc: number; weight: number; cost: number; }
 export interface BotBomb { id?: number; name: string; wd: number; slots: number; pc: number; weight: number; cost: number; }
+
+export interface BattleHistory {
+  id?: number;
+  date: string;
+  mode: "vs-computer" | "vs-player";
+  player1Id: number;
+  player1Name: string;
+  player1ArmyName: string;
+  player2Id: number | null;
+  player2Name: string;
+  player2ArmyName: string;
+  result: "player1" | "player2" | "draw" | "both-lose";
+}
 
 export interface Profile {
   id?: number;
@@ -77,6 +94,7 @@ export class BotWarsDB extends Dexie {
   botSecondaries!: Table<BotSecondary>;
   botBombs!: Table<BotBomb>;
   profiles!: Table<Profile>;
+  battleHistory!: Table<BattleHistory>;
 
   constructor() {
     super("BotWarsDB");
@@ -96,11 +114,37 @@ export class BotWarsDB extends Dexie {
       botBombs: "++id,&name",
       profiles: "++id,&username,email"
     });
+
+    // v5: user-scoped tables with compound unique indexes
+    // Upgrade clears old user data (no userId → incompatible with new compound indexes)
+    this.version(5).stores({
+      orderLists: "++id,&[userId+name],userId",
+      targetMaps: "++id,&[userId+name],userId",
+      bots: "++id,&[userId+name],userId,targetMapId,ordersListId",
+      armies: "++id,&[userId+name],userId",
+      botFrames: "++id,&name",
+      botEngines: "++id,&name",
+      botComputers: "++id,&name",
+      botArmors: "++id,&name",
+      botSensors: "++id,&name",
+      botMasters: "++id,&name",
+      botSecondaries: "++id,&name",
+      botBombs: "++id,&name",
+      profiles: "++id,&username,email"
+    }).upgrade(tx =>
+      Promise.all([
+        tx.table("bots").clear(),
+        tx.table("armies").clear(),
+        tx.table("orderLists").clear(),
+        tx.table("targetMaps").clear(),
+      ])
+    );
+
+    // v6: adds battle history table
+    this.version(6).stores({
+      battleHistory: "++id,player1Id,player2Id,date",
+    });
   }
 }
 
 export const db = new BotWarsDB();
-
-
-
-

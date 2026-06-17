@@ -15,10 +15,13 @@ import {
   ListItemButton,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { RootState } from "../store/store";
 import { db } from "../db/db";
 
 export default function ArmyWorkshopScreen() {
   const navigate = useNavigate();
+  const userId = useSelector((state: RootState) => state.auth.userId);
 
   // Army name dropdown
   const [armyName, setArmyName] = useState("");
@@ -32,26 +35,28 @@ export default function ArmyWorkshopScreen() {
   const [armyBots, setArmyBots] = useState<string[]>([]);
   const [selectedBotIndices, setSelectedBotIndices] = useState<Set<number>>(new Set());
 
+  useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
+
   // Load army and bot names on mount
   useEffect(() => {
     async function loadData() {
-      const armies = await db.armies.orderBy("name").toArray();
-      setArmyNames(armies.map(a => a.name));
+      if (!userId) return;
+      const armies = await db.armies.where("userId").equals(userId).toArray();
+      setArmyNames(armies.map(a => a.name).sort());
 
-      const bots = await db.bots.orderBy("name").toArray();
+      const bots = await db.bots.where("userId").equals(userId).toArray();
+      bots.sort((a, b) => a.name.localeCompare(b.name));
       setBotNames(bots.map(b => b.name));
-      if (bots.length > 0) {
-        setSelectedBot(bots[0].name);
-      }
+      if (bots.length > 0) setSelectedBot(bots[0].name);
     }
     loadData();
-  }, []);
+  }, [userId]);
 
   // Load army bots when army name changes
   useEffect(() => {
     async function loadArmyBots() {
       if (armyName) {
-        const army = await db.armies.where("name").equals(armyName).first();
+        const army = await db.armies.where("[userId+name]").equals([userId, armyName]).first();
         if (army) {
           const botNames = await Promise.all(army.botIds.map(async (id) => {
             const bot = await db.bots.get(id);
@@ -90,7 +95,7 @@ export default function ArmyWorkshopScreen() {
     }
     const botIds: number[] = [];
     for (const botName of armyBots) {
-      const bot = await db.bots.where("name").equals(botName).first();
+      const bot = await db.bots.where("[userId+name]").equals([userId, botName]).first();
       if (!bot) {
         alert(`Bot "${botName}" not found in database. Save it first.`);
         return;
@@ -99,14 +104,14 @@ export default function ArmyWorkshopScreen() {
     }
     try {
       const name = armyName.trim();
-      const existing = await db.armies.where("name").equals(name).first();
+      const existing = await db.armies.where("[userId+name]").equals([userId, name]).first();
       if (existing) {
         await db.armies.update(existing.id!, { botIds });
       } else {
-        await db.armies.add({ name, botIds });
+        await db.armies.add({ userId, name, botIds });
       }
-      const all = await db.armies.orderBy("name").toArray();
-      setArmyNames(all.map(a => a.name));
+      const all = await db.armies.where("userId").equals(userId).toArray();
+      setArmyNames(all.map(a => a.name).sort());
       alert("Army Saved!");
     } catch (e: any) {
       alert("Save failed: " + (e?.message ?? e));
@@ -194,6 +199,8 @@ export default function ArmyWorkshopScreen() {
       </Select>
     </FormControl>
   );
+
+  if (userId === null) return null;
 
   return (
     <Box
