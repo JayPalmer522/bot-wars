@@ -162,6 +162,10 @@ export default function CombatScreen() {
       const { outcome, victoryType } = detectOutcome(record);
       await recordBattle(outcome, p2Id, p2Name);
 
+      if (canvasRef.current && result.initialMapState) {
+        await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState);
+      }
+
       const p1Name = username ?? "Player 1";
       setCombatResult({
         outcome,
@@ -169,10 +173,6 @@ export default function CombatScreen() {
         winnerName: outcome === "player1" ? p1Name : outcome === "player2" ? p2Name : "",
         loserName:  outcome === "player1" ? p2Name : outcome === "player2" ? p1Name : "",
       });
-
-      if (canvasRef.current && result.initialMapState) {
-        REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState);
-      }
     } else {
       alert(result.message);
     }

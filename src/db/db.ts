@@ -144,6 +144,13 @@ export class BotWarsDB extends Dexie {
     this.version(6).stores({
       battleHistory: "++id,player1Id,player2Id,date",
     });
+
+    // v7: fix SmallMedBot → SmallBot (SmallMedBot only has one sprite file: P1_DN)
+    this.version(7).stores({}).upgrade(tx =>
+      tx.table("bots").toCollection().modify((bot: Bot) => {
+        if (bot.botImage === "SmallMedBot") bot.botImage = "SmallBot";
+      })
+    );
   }
 }
 

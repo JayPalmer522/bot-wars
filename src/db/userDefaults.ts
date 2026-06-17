@@ -159,7 +159,7 @@ export async function seedUserDefaults(userId: number): Promise<void> {
     weaponMaster:    "Laser-Cannon = WM 50 WD, 3 WR, 5 slots, 500 PC, 500 weight, 1500 cost.",
     weaponSecondary: "Spiked-Mace = WS 20 WD, 1 WR, 4 slots, 200 PC, 200 weight, 800 cost.",
     weaponBomb:      "NONE = WB 0,0 WD, 0 slot, PC 0 PC, 0 weight, 0 cost.",
-    botImage:        "SmallMedBot",
+    botImage:        "SmallBot",
     ordersListId:    raiderId_n,
     targetMapId:     raiderMapId_n,
     slotsUsed:       "50/50",
