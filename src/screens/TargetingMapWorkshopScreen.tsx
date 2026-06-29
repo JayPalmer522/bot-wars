@@ -295,14 +295,14 @@ export default function TargetingMapWorkshopScreen() {
           fontWeight: "bold",
           fontSize: "30pt",
           color: "white",
-          mb: 4,
+          mb: 2,
         }}
       >
         TARGETING MAP WORKSHOP
       </Typography>
 
       {/* Name of Targeting Map */}
-      <Box sx={{ width: "40%", mb: 3 }}>
+      <Box sx={{ width: "40%", mb: 2 }}>
         <Typography
           sx={{
             fontFamily: "Courier New",
@@ -376,55 +376,14 @@ export default function TargetingMapWorkshopScreen() {
         />
       </Box>
 
-      {/* Range of Scanner */}
-      <Box
-        sx={{
-          display: "flex",
-          alignItems: "center",
-          mb: 3,
-          gap: 2,
-        }}
-      >
-        <Typography
-          sx={{
-            fontFamily: "Courier New",
-            fontSize: "14pt",
-            color: "white",
-          }}
-        >
-          Range of Scanner:
-        </Typography>
-
-        {[1, 2, 3].map((r) => (
-          <Button
-            key={r}
-            variant="contained"
-            onClick={() => handleRangeChange(r)}
-            sx={{
-              width: 45,
-              height: 45,
-              minWidth: 45,
-              minHeight: 45,
-              bgcolor: range === r ? "darkblue" : "white",
-              color: range === r ? "white" : "black",
-              border: "2px solid gray",
-              fontFamily: "Courier New",
-              fontSize: "14pt",
-            }}
-          >
-            {r}
-          </Button>
-        ))}
-      </Box>
-
-      {/* Main Layout: Left button + Grid + Right button */}
+      {/* Main Layout: Left button + Grid + Right controls */}
       <Box
         sx={{
           display: "grid",
           gridTemplateColumns: "1fr auto 1fr",
           gap: 4,
           alignItems: "center",
-          mb: 6,
+          mb: 3,
         }}
       >
         {/* Left: Review Targeting Sensor Types */}
@@ -462,23 +421,52 @@ export default function TargetingMapWorkshopScreen() {
           )}
         </Box>
 
-        {/* Right: Clear All */}
-        <Button
-          variant="contained"
-          onClick={clearAll}
-          sx={{
-            bgcolor: "darkblue",
-            border: "2px solid gray",
-            fontFamily: "Courier New",
-            fontSize: "12pt",
-            color: "white",
-            width: 120,
-            height: 60,
-            "&:hover": { bgcolor: "#001a66" },
-          }}
-        >
-          Clear All
-        </Button>
+        {/* Right: Range of Scanner + Clear All */}
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 2 }}>
+          <Typography
+            sx={{ fontFamily: "Courier New", fontSize: "12pt", color: "white", fontWeight: "bold" }}
+          >
+            Range of Scanner:
+          </Typography>
+          <Box sx={{ display: "flex", gap: 1 }}>
+            {[1, 2, 3].map((r) => (
+              <Button
+                key={r}
+                variant="contained"
+                onClick={() => handleRangeChange(r)}
+                sx={{
+                  width: 45,
+                  height: 45,
+                  minWidth: 45,
+                  minHeight: 45,
+                  bgcolor: range === r ? "darkblue" : "white",
+                  color: range === r ? "white" : "black",
+                  border: "2px solid gray",
+                  fontFamily: "Courier New",
+                  fontSize: "14pt",
+                }}
+              >
+                {r}
+              </Button>
+            ))}
+          </Box>
+          <Button
+            variant="contained"
+            onClick={clearAll}
+            sx={{
+              bgcolor: "darkblue",
+              border: "2px solid gray",
+              fontFamily: "Courier New",
+              fontSize: "12pt",
+              color: "white",
+              width: 120,
+              height: 60,
+              "&:hover": { bgcolor: "#001a66" },
+            }}
+          >
+            Clear All
+          </Button>
+        </Box>
       </Box>
 
       {/* Bottom Buttons */}

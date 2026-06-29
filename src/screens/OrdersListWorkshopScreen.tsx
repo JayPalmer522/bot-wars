@@ -31,7 +31,7 @@ export default function OrdersListWorkshopScreen() {
 
   // List of commands added
   const [commands, setCommands] = useState<string[]>([]);
-  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const [selectedIndices, setSelectedIndices] = useState<Set<number>>(new Set());
 
   useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
 
@@ -42,7 +42,7 @@ export default function OrdersListWorkshopScreen() {
 
   async function loadOrdersList(name: string) {
     const list = await db.orderLists.where("[userId+name]").equals([userId, name]).first();
-    if (list) setCommands(list.commands);
+    if (list) { setCommands(list.commands); setSelectedIndices(new Set()); }
   }
 
   // Placeholder validation routine
@@ -136,12 +136,12 @@ export default function OrdersListWorkshopScreen() {
   }
 
   function removeCommand() {
-    if (selectedIndex !== null) {
-      const updated = [...commands];
-      updated.splice(selectedIndex, 1);
-      setCommands(updated);
-      setSelectedIndex(null);
-    }
+    if (selectedIndices.size === 0) return;
+    const toRemove = Array.from(selectedIndices).sort((a, b) => b - a);
+    const updated = [...commands];
+    for (const idx of toRemove) updated.splice(idx, 1);
+    setCommands(updated);
+    setSelectedIndices(new Set());
   }
 
   const commandOptions = [
@@ -346,7 +346,7 @@ export default function OrdersListWorkshopScreen() {
             sx={leftButtonStyle}
             onClick={removeCommand}
           >
-            Remove Command from Orders List
+            Remove Selected Command(s)
           </Button>
         </Box>
 
@@ -364,8 +364,14 @@ export default function OrdersListWorkshopScreen() {
             {commands.map((cmd, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton
-                  selected={selectedIndex === index}
-                  onClick={() => setSelectedIndex(index)}
+                  selected={selectedIndices.has(index)}
+                  onClick={() => {
+                    setSelectedIndices(prev => {
+                      const next = new Set(prev);
+                      if (next.has(index)) next.delete(index); else next.add(index);
+                      return next;
+                    });
+                  }}
                   sx={{
                     fontFamily: "Courier New",
                     fontSize: "12pt",
@@ -376,7 +382,9 @@ export default function OrdersListWorkshopScreen() {
                     alignItems: "center",
                     justifyContent: "flex-start",
                     paddingLeft: "8px",
-                    bgcolor: selectedIndex === index ? "#e0e0e0" : "white",
+                    bgcolor: selectedIndices.has(index) ? "#b3d4ff" : "white",
+                    "&.Mui-selected": { bgcolor: "#b3d4ff" },
+                    "&.Mui-selected:hover": { bgcolor: "#91bfff" },
                   }}
                 >
                   {cmd}

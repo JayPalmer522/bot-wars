@@ -164,8 +164,14 @@ export default function CombatScreen() {
       const { outcome, victoryType } = detectOutcome(record);
       await recordBattle(outcome, p2Id, p2Name);
 
-      if (canvasRef.current && result.initialMapState) {
-        await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState);
+      if (canvasRef.current) {
+        if (result.initialMapState) {
+          await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState);
+        } else {
+          await BEGIN_ANIMATION(canvasRef.current);
+        }
+        // Wait for one more paint so the final canvas frame is visible before the dialog opens
+        await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       }
 
       const p1Name = username ?? "Player 1";
@@ -313,21 +319,6 @@ export default function CombatScreen() {
         COMBAT - BOT WARS
       </Typography>
 
-      {/* Mode selector */}
-      <Box sx={{ display: "flex", gap: 2, mb: 3 }}>
-        {(["vs-computer", "vs-player"] as Mode[]).map(m => (
-          <Button key={m} variant="contained" onClick={() => switchMode(m)}
-            sx={{
-              fontFamily: "Courier New", fontSize: "12pt", fontWeight: "bold", color: "white",
-              bgcolor: mode === m ? "#0044cc" : "darkblue",
-              border: mode === m ? "2px solid white" : "2px solid gray",
-              px: 3, "&:hover": { bgcolor: "#0033aa" },
-            }}>
-            {m === "vs-computer" ? "Player vs Computer" : "Player vs Player"}
-          </Button>
-        ))}
-      </Box>
-
       {/* Main layout */}
       <Box sx={{ display: "grid", gridTemplateColumns: "1fr auto 1fr", gap: 4, alignItems: "flex-start", width: "90%" }}>
         {/* LEFT: limits + combat record */}
@@ -355,6 +346,25 @@ export default function CombatScreen() {
 
         {/* RIGHT: mode controls */}
         <Box sx={{ width: "100%" }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}>
+            <Typography sx={{ color: "white", fontFamily: "Courier New", fontSize: "12pt", fontWeight: "bold", whiteSpace: "nowrap" }}>
+              Mode:
+            </Typography>
+            <Select
+              value={mode}
+              onChange={(e) => switchMode(e.target.value as Mode)}
+              size="small"
+              sx={{
+                bgcolor: "white", fontFamily: "Courier New", fontSize: "12pt", fontWeight: "bold",
+                flex: 1,
+                "& .MuiSelect-select": { color: "black", py: "4px" },
+              }}
+              MenuProps={{ PaperProps: { sx: { bgcolor: "white", "& .MuiMenuItem-root": { fontFamily: "Courier New", fontWeight: "bold", color: "black" } } } }}
+            >
+              <MenuItem value="vs-computer">Player vs Computer</MenuItem>
+              <MenuItem value="vs-player">Player vs Player</MenuItem>
+            </Select>
+          </Box>
           {mode === "vs-computer" ? renderVsComputerRight() : renderVsPlayerRight()}
         </Box>
       </Box>
