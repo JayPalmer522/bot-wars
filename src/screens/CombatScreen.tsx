@@ -72,6 +72,8 @@ export default function CombatScreen() {
   const MACRO_PRESETS = [0, 200, 500, 1000, 2000];
   const limits = ["No limits", "10,000 Max", "15,000 Max", "20,000 Max", "30,000 Max", "40,000 Max", "50,000 Max"];
 
+  useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
+
   useEffect(() => {
     if (!userId) return;
     db.armies.where("userId").equals(userId).toArray().then(armies => {

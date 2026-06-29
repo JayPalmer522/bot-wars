@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -8,6 +8,8 @@ import { RootState } from "../store/store";
 export default function NavigationScreen() {
   const navigate = useNavigate();
   const username = useSelector((state: RootState) => state.auth.username);
+
+  useEffect(() => { if (!username) navigate("/"); }, [username]);
 
   return (
     <Box

@@ -1,31 +1,27 @@
 
-import React, { useEffect, useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Box, Button, TextField, Typography } from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { ATTEMPT_LOGIN } from "../utils/Profiles";
-import { db } from "../db/db";
 import { setCurrentUser } from "../store/authSlice";
+import { db } from "../db/db";
 
 export default function SplashScreen() {
   const navigate = useNavigate();
+  const location = useLocation();
   const dispatch = useDispatch();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [statusMsg, setStatusMsg] = useState("");
-  const [profilesExist, setProfilesExist] = useState(false);
 
+  // On startup only: if no profiles exist, go straight to Create Profile.
+  // Skip this redirect when the user navigated back from CreateProfile.
   useEffect(() => {
+    if (location.state?.fromCreateProfile) return;
     db.profiles.count().then((count) => {
-      if (count === 0) {
-        navigate("/create-profile");
-      } else {
-        setProfilesExist(true);
-      }
-    }).catch(() => {
-      // DB error (e.g. schema upgrade failure) — show login screen anyway
-      setProfilesExist(true);
-    });
+      if (count === 0) navigate("/create-profile");
+    }).catch(() => {});
   }, []);
 
   const handleLogin = async () => {
@@ -37,8 +33,6 @@ export default function SplashScreen() {
       setStatusMsg(result.message);
     }
   };
-
-  if (!profilesExist) return null;
 
   return (
     <Box

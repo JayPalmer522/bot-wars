@@ -386,8 +386,9 @@ export function STARTING_MAP_SQUARES(ALL_BOTS_IN_COMBAT_LIST, botStatsMap) {
   // The other army starts on the RIGHT facing West.
   const leftArmyNum = ALL_BOTS_IN_COMBAT_LIST[0]?.army ?? 1;
 
-  const LEFT_SPACES  = [1,2,11,12,21,22,31,32,41,42,51,52,61,62,71,72,81,82,91,92];
-  const RIGHT_SPACES = [9,10,19,20,29,30,39,40,49,50,59,60,69,70,79,80,89,90,99,100];
+  // Innermost column first so front-line bots act before edge bots
+  const LEFT_SPACES  = [2,12,22,32,42,52,62,72,82,92, 1,11,21,31,41,51,61,71,81,91];
+  const RIGHT_SPACES = [9,19,29,39,49,59,69,79,89,99, 10,20,30,40,50,60,70,80,90,100];
 
   const BASIC_MAP_NUMBERS = Array.from({ length: 100 }, (_, i) => i + 1);
   const GAME_MAP_BOTS     = Array(100).fill("0");
@@ -507,47 +508,39 @@ export async function EXECUTE_ORDERS_LIST(
   let damageDealt = false;
   const newDeadBots = [];
 
+  // Per-turn limits: movement budget and one-shot weapon flags
+  const moveLimit = botStatsMap[CURRENT_BOT.combatBotNumber]?.movement ?? 1;
+  let movesThisTurn = 0;
+  let masterFired = false;
+  let secondaryFired = false;
+
   for (let i = 0; i < commands.length; i++) {
     if (deadBotIds.has(botId)) break;
 
     const cmd = commands[i];
 
-    if (cmd === "Move Forward 1") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+    if (cmd.startsWith("Move Forward ")) {
+      const requested = parseInt(cmd.replace("Move Forward ", "")) || 1;
+      const stepsAllowed = Math.min(requested, moveLimit - movesThisTurn);
+      if (stepsAllowed <= 0) {
+        COMBAT_RECORD.push(`Bot ${botId}: movement limit (${moveLimit}) reached — ${cmd} skipped.`);
+      } else {
+        for (let s = 0; s < stepsAllowed; s++)
+          [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+            await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+        movesThisTurn += stepsAllowed;
+      }
 
-    } else if (cmd === "Move Forward 2") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-
-    } else if (cmd === "Move Forward 3") {
-      for (let s = 0; s < 3; s++)
+    } else if (cmd.startsWith("Move Backward ")) {
+      const requested = parseInt(cmd.replace("Move Backward ", "")) || 1;
+      const stepsAllowed = Math.min(requested, moveLimit - movesThisTurn);
+      if (stepsAllowed <= 0) {
+        COMBAT_RECORD.push(`Bot ${botId}: movement limit (${moveLimit}) reached — ${cmd} skipped.`);
+      } else {
         [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-
-    } else if (cmd === "Move Forward 4") {
-      for (let s = 0; s < 4; s++)
-        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-
-    } else if (cmd === "Move Forward 5") {
-      for (let s = 0; s < 5; s++)
-        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-          await CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
-
-    } else if (cmd === "Move Backward 1") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 1);
-
-    } else if (cmd === "Move Backward 2") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 2);
-
-    } else if (cmd === "Move Backward 3") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, 3);
+          await CURRENT_MOVE_BACKWARD(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, stepsAllowed);
+        movesThisTurn += stepsAllowed;
+      }
 
     } else if (cmd === "Turn Right") {
       [GAME_MAP_FACING, COMBAT_RECORD] =
@@ -566,37 +559,57 @@ export async function EXECUTE_ORDERS_LIST(
         await CURRENT_VEER_LEFT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
 
     } else if (cmd === "Fire Master Weapon") {
-      const acquired = acquiredTargetsMap[botId] ?? [];
-      const r = fireMasterWeapon(
-        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
-        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
-      );
-      if (r.damageDealt) damageDealt = true;
-      for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+      if (masterFired) {
+        COMBAT_RECORD.push(`Bot ${botId}: Master Weapon already fired this turn — skipped.`);
+      } else {
+        const acquired = acquiredTargetsMap[botId] ?? [];
+        const r = fireMasterWeapon(
+          CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+          COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+        );
+        if (r.damageDealt) damageDealt = true;
+        for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+        masterFired = true;
+      }
 
     } else if (cmd === "Fire Seconday Weapon" || cmd === "Fire Secondary Weapon") {
-      const acquired = acquiredTargetsMap[botId] ?? [];
-      const r = fireSecondaryWeapon(
-        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
-        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
-      );
-      if (r.damageDealt) damageDealt = true;
-      for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+      if (secondaryFired) {
+        COMBAT_RECORD.push(`Bot ${botId}: Secondary Weapon already fired this turn — skipped.`);
+      } else {
+        const acquired = acquiredTargetsMap[botId] ?? [];
+        const r = fireSecondaryWeapon(
+          CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+          COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+        );
+        if (r.damageDealt) damageDealt = true;
+        for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+        secondaryFired = true;
+      }
 
     } else if (cmd === "Fire All") {
       const acquired = acquiredTargetsMap[botId] ?? [];
-      // If 2 targets acquired, Master gets target[0] and Secondary gets target[1]
-      const r1 = fireMasterWeapon(
-        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
-        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
-      );
-      for (const d of r1.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
-      const r2 = fireSecondaryWeapon(
-        CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
-        COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[1] ?? null
-      );
-      if (r1.damageDealt || r2.damageDealt) damageDealt = true;
-      for (const d of r2.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+      if (!masterFired) {
+        const r1 = fireMasterWeapon(
+          CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+          COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[0] ?? null
+        );
+        if (r1.damageDealt) damageDealt = true;
+        for (const d of r1.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+        masterFired = true;
+      } else {
+        COMBAT_RECORD.push(`Bot ${botId}: Master Weapon already fired this turn — skipped in Fire All.`);
+      }
+      if (!secondaryFired) {
+        const r2 = fireSecondaryWeapon(
+          CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+          COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[1] ?? null
+        );
+        if (r2.damageDealt) damageDealt = true;
+        for (const d of r2.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+        secondaryFired = true;
+      } else {
+        COMBAT_RECORD.push(`Bot ${botId}: Secondary Weapon already fired this turn — skipped in Fire All.`);
+      }
 
     } else if (cmd === "Activate Targeting Map") {
       const tmIdx   = findBotIndex(GAME_MAP_BOTS, botId);
@@ -623,11 +636,16 @@ export async function EXECUTE_ORDERS_LIST(
       if (!hasEnemy) i++; // skip next command
 
     } else if (cmd === "Move toward located Enemy") {
-      [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
-        await CURRENT_MOVE_TOWARD_ENEMY(
-          CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
-          COMBAT_RECORD, botStatsMap
-        );
+      if (movesThisTurn >= moveLimit) {
+        COMBAT_RECORD.push(`Bot ${botId}: movement limit (${moveLimit}) reached — Move toward located Enemy skipped.`);
+      } else {
+        [GAME_MAP_FACING, COMBAT_RECORD, GAME_MAP_BOTS, GAME_MAP_DAMAGE] =
+          await CURRENT_MOVE_TOWARD_ENEMY(
+            CURRENT_BOT, ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
+            COMBAT_RECORD, botStatsMap
+          );
+        movesThisTurn++;
+      }
 
     } else if (cmd === "If Movement Blocked by Enemy ...") {
       const idx = findBotIndex(GAME_MAP_BOTS, botId);

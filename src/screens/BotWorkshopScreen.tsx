@@ -101,12 +101,12 @@ export default function BotWorkshopScreen() {
       alert("Every Bot must have a name.");
       return;
     }
-    const tm = await db.targetMaps.where("name").equals(targetingMap).first();
+    const tm = await db.targetMaps.where("[userId+name]").equals([userId, targetingMap]).first();
     if (!tm) {
       alert(`Targeting Map "${targetingMap}" not found. Save it first.`);
       return;
     }
-    const ol = await db.orderLists.where("name").equals(ordersList).first();
+    const ol = await db.orderLists.where("[userId+name]").equals([userId, ordersList]).first();
     if (!ol) {
       alert(`Orders List "${ordersList}" not found. Save it first.`);
       return;

@@ -1,5 +1,5 @@
 
-import React from "react";
+import React, { useEffect } from "react";
 import { Box, Button, Typography } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -9,6 +9,9 @@ export default function ResultsScreen() {
   const navigate = useNavigate();
   const combatRecord = useSelector((state: RootState) => state.battleLog.combatRecord);
   const log = useSelector((state: RootState) => state.battleLog.log);
+  const username = useSelector((state: RootState) => state.auth.username);
+
+  useEffect(() => { if (!username) navigate("/"); }, [username]);
 
   const renderEntry = (entry: any, index: number) => {
     if (typeof entry === "string") {

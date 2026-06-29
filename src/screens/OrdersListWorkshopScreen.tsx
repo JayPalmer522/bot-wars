@@ -81,32 +81,9 @@ export default function OrdersListWorkshopScreen() {
 ///////////////////////////////////////
 ///////////////////////////////////////
 ///////////////////////////////////////
-async function saveOrdersList(name, commands) {
-  // Look for existing record with same name
-  const existing = await db.orderLists.where("name").equals(name).first();
-
-  if (existing) {
-    // Overwrite existing record
-    await db.orderLists.update(existing.id, { commands });
-    return existing.id;
-  } else {
-    // Create new record
-    return await db.orderLists.add({ name, commands });
-  }
-}
 
 
 
-////////////////// POSSIBLY WORKS? /////////////////////
-async function handleSelectOrderList(id) {
-  setSelectedListId(id);
-  setCurrentCommands([]); // clear scrollable list box
-
-  const list = await db.orderLists.get(id);
-  if (list) {
-    setCurrentCommands(list.commands); // load commands in correct order
-  }
-}
 
 
 

@@ -111,7 +111,7 @@ export default function CreateProfileScreen() {
         <Button variant="contained" onClick={handleSave} disabled={saving} sx={buttonStyle}>
           {saving ? "Saving..." : "Save Profile"}
         </Button>
-        <Button variant="contained" onClick={() => navigate("/")} sx={buttonStyle}>
+        <Button variant="contained" onClick={() => navigate("/", { state: { fromCreateProfile: true } })} sx={buttonStyle}>
           Back to Login
         </Button>
       </Box>
