@@ -67,6 +67,7 @@ export default function CombatScreen() {
   const [combatResult, setCombatResult] = useState<CombatResultInfo | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const [showCover, setShowCover] = useState(true);
 
   const MICRO_PRESETS = [0, 100, 200, 500, 1000];
   const MACRO_PRESETS = [0, 200, 500, 1000, 2000];
@@ -138,6 +139,7 @@ export default function CombatScreen() {
   }
 
   async function simulateCombat() {
+    setShowCover(false);
     const army1Data = await db.armies.where("[userId+name]").equals([userId!, army1]).first();
     const a2UserId  = mode === "vs-player" ? p2UserId! : userId!;
     const army2Data = await db.armies.where("[userId+name]").equals([a2UserId, army2]).first();
@@ -341,8 +343,18 @@ export default function CombatScreen() {
           </Box>
         </Box>
 
-        {/* CENTER: canvas */}
-        <canvas ref={canvasRef} width={433} height={433} style={{ border: "2px solid gray", display: "block" }} />
+        {/* CENTER: canvas with cover overlay */}
+        <Box sx={{ position: "relative", display: "inline-block" }}>
+          <canvas ref={canvasRef} width={433} height={433} style={{ border: "2px solid gray", display: "block" }} />
+          {showCover && (
+            <Box
+              component="img"
+              src="/Graphics/ComBatMapCover3.png"
+              alt=""
+              sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "block" }}
+            />
+          )}
+        </Box>
 
         {/* RIGHT: mode controls */}
         <Box sx={{ width: "100%" }}>
