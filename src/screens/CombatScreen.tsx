@@ -351,7 +351,8 @@ export default function CombatScreen() {
               component="img"
               src="/Graphics/ComBatMapCover3.png"
               alt=""
-              sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "block" }}
+              onClick={() => window.open("https://jaypalmerbooks.com", "_blank")}
+              sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "block", cursor: "pointer" }}
             />
           )}
         </Box>
