@@ -199,6 +199,28 @@ function buildBotStatsMap(ALL_BOTS_IN_COMBAT_LIST) {
 
 // ─── Orders lists loader ──────────────────────────────────────────────────────
 
+async function loadAllTargetingMaps(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
+  const map = {};
+  const seen = new Set();
+  for (const bot of ALL_BOTS_IN_COMBAT_LIST) {
+    const id = bot.targetMapId;
+    if (id == null || seen.has(id)) continue;
+    seen.add(id);
+    try {
+      const tm = await db.targetMaps.get(id);
+      if (tm) {
+        map[id] = tm;
+        logInfo(COMBAT_RECORD, `Loaded targeting map id=${id} "${tm.name}" range=${tm.range}`);
+      } else {
+        logError(COMBAT_RECORD, `Targeting map id=${id} not found in DB`);
+      }
+    } catch (error) {
+      logError(COMBAT_RECORD, `Failed to load targeting map id=${id}`, error);
+    }
+  }
+  return map;
+}
+
 async function loadAllOrdersLists(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
   const map = {};
   const seen = new Set();
@@ -431,6 +453,9 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
     const ordersListsMap = await loadAllOrdersLists(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
     logInfo(COMBAT_RECORD, `Orders lists loaded: ${Object.keys(ordersListsMap).length} unique lists`);
 
+    const targetingMapsMap = await loadAllTargetingMaps(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD);
+    logInfo(COMBAT_RECORD, `Targeting maps loaded: ${Object.keys(targetingMapsMap).length} unique maps`);
+
     const deadBotIds = new Set();
     const acquiredTargetsMap = {};
     let noRecentDamageRounds = 0;
@@ -449,7 +474,7 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
           const result = await EXECUTE_ORDERS_LIST(
             ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD,
             noRecentDamageRounds, deadBotIds, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE,
-            ordersListsMap, botStatsMap, acquiredTargetsMap
+            ordersListsMap, botStatsMap, acquiredTargetsMap, targetingMapsMap
           );
 
           if (result.damageDealt) damageThisRound = true;
@@ -491,7 +516,7 @@ export async function MAIN_COMBAT_LOOP(ALL_BOTS_IN_COMBAT_LIST, COMBAT_RECORD) {
 export async function EXECUTE_ORDERS_LIST(
   ALL_BOTS_IN_COMBAT_LIST, GAME_MAP_BOTS, GAME_MAP_BULLETS, COMBAT_RECORD,
   noRecentDamageTurns, deadBotIds, GAME_MAP_FACING, CURRENT_BOT, GAME_MAP_DAMAGE,
-  ordersListsMap, botStatsMap, acquiredTargetsMap = {}
+  ordersListsMap, botStatsMap, acquiredTargetsMap = {}, targetingMapsMap = {}
 ) {
   const botId = String(CURRENT_BOT.combatBotNumber);
   const ordersList = ordersListsMap[CURRENT_BOT.ordersListId];
@@ -500,6 +525,9 @@ export async function EXECUTE_ORDERS_LIST(
     logError(COMBAT_RECORD, `Bot ${botId} has no orders list (ordersListId=${CURRENT_BOT.ordersListId})`);
     return { damageDealt: false, newDeadBots: [] };
   }
+
+  // Clear any targets carried over from a previous turn at the START of this turn
+  delete acquiredTargetsMap[botId];
 
   const botSpace = findBotIndex(GAME_MAP_BOTS, botId) + 1;
   logInfo(COMBAT_RECORD, `Bot ${botId} (army ${CURRENT_BOT.army}, "${CURRENT_BOT.name}") begins turn on space ${botSpace}`);
@@ -615,13 +643,44 @@ export async function EXECUTE_ORDERS_LIST(
       const tmIdx   = findBotIndex(GAME_MAP_BOTS, botId);
       const tmStats = botStatsMap[CURRENT_BOT.combatBotNumber];
       const tmRange = tmStats?.sensorRange ?? 1;
-      const maxTargets = tmStats?.sensorTargets ?? 1;
-      const targets = scanForEnemies(tmIdx, CURRENT_BOT.army, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, tmRange);
-      const acquired = targets.slice(0, maxTargets);
+      const maxTargets = Math.min(tmStats?.sensorTargets ?? 1, 2);
+      const facing  = GAME_MAP_FACING[tmIdx] ?? "N";
+      const tmData  = targetingMapsMap[CURRENT_BOT.targetMapId];
+
+      const acquired = [];
+
+      if (tmData?.grid) {
+        // Use the targeting map's priority grid, rotated to the bot's current facing
+        const scanOrder = getScanOrderFromTargetMap(tmData.grid, facing, tmRange);
+        const botRow = Math.floor(tmIdx / 10);
+        const botCol = tmIdx % 10;
+
+        for (const { dr, dc } of scanOrder) {
+          if (acquired.length >= maxTargets) break;
+          const targetRow = botRow + dr;
+          const targetCol = botCol + dc;
+          if (targetRow < 0 || targetRow > 9 || targetCol < 0 || targetCol > 9) continue;
+          const targetIdx = targetRow * 10 + targetCol;
+          const cell = GAME_MAP_BOTS[targetIdx];
+          if (cell === "0") continue;
+          const targetBot = ALL_BOTS_IN_COMBAT_LIST.find(b => String(b.combatBotNumber) === cell);
+          if (!targetBot || targetBot.army === CURRENT_BOT.army) continue;
+          acquired.push(targetIdx);
+        }
+      } else {
+        // Fallback: plain Chebyshev scan if targeting map data not available
+        const targets = scanForEnemies(tmIdx, CURRENT_BOT.army, GAME_MAP_BOTS, ALL_BOTS_IN_COMBAT_LIST, tmRange);
+        acquired.push(...targets.slice(0, maxTargets));
+      }
+
+      // If only one target found, duplicate it so both weapon slots aim at the same enemy
+      if (acquired.length === 1) acquired.push(acquired[0]);
+
       acquiredTargetsMap[botId] = acquired;
       if (acquired.length > 0) {
-        const spaces = acquired.map(i => i + 1).join(", ");
-        COMBAT_RECORD.push(`Bot ${botId} on space ${tmIdx + 1} activates targeting map — ${acquired.length} target(s) acquired in range ${tmRange} at space(s): ${spaces}.`);
+        const unique = [...new Set(acquired)];
+        const spaces = unique.map(i => i + 1).join(", ");
+        COMBAT_RECORD.push(`Bot ${botId} on space ${tmIdx + 1} activates targeting map — ${unique.length} target(s) acquired in range ${tmRange} at space(s): ${spaces}.`);
       } else {
         COMBAT_RECORD.push(`Bot ${botId} on space ${tmIdx + 1} activates targeting map — no targets found in range ${tmRange}.`);
       }
@@ -887,6 +946,57 @@ export async function CURRENT_MOVE_TOWARD_ENEMY(
   }
 
   return CURRENT_MOVE_BOT1(COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE);
+}
+
+// ─── Targeting map rotation helpers ──────────────────────────────────────────
+
+// Returns the clockwise cell sequence for Chebyshev ring `ring` around center.
+// Each element is [dr, dc] relative to center.
+function getRingSequence(ring) {
+  const cells = [];
+  const t = -ring, b = ring, l = -ring, r = ring;
+  for (let c = l; c < r; c++) cells.push([t, c]);    // top row L→R
+  for (let dr = t; dr < b; dr++) cells.push([dr, r]); // right col T→B
+  for (let c = r; c > l; c--) cells.push([b, c]);    // bottom row R→L
+  for (let dr = b; dr > t; dr--) cells.push([dr, l]); // left col B→T
+  return cells;
+}
+
+// Rotate [dr, dc] by one 45° clockwise step using the ring-shift approach.
+// Each ring has 8*ring cells; shifting by `ring` positions = 45°.
+function rotate45CWStep(dr, dc) {
+  const ring = Math.max(Math.abs(dr), Math.abs(dc));
+  if (ring === 0) return [0, 0];
+  const seq = getRingSequence(ring);
+  const idx = seq.findIndex(([r, c]) => r === dr && c === dc);
+  if (idx === -1) return [dr, dc];
+  return seq[(idx + ring) % seq.length];
+}
+
+// Rotate [dr, dc] by rotSteps × 45° clockwise.
+function rotateRelativePos(dr, dc, rotSteps) {
+  let r = dr, c = dc;
+  for (let s = 0; s < (rotSteps % 8); s++) [r, c] = rotate45CWStep(r, c);
+  return [r, c];
+}
+
+// Build a priority-sorted list of relative cell offsets from the targeting map grid,
+// rotated to match the bot's current facing. The grid assumes North = forward.
+// Returns [{priority, dr, dc}] sorted ascending by priority (1 = highest).
+function getScanOrderFromTargetMap(grid, facing, sensorRange) {
+  const ROT_STEPS = { N: 0, NE: 1, E: 2, SE: 3, S: 4, SW: 5, W: 6, NW: 7 };
+  const rotSteps = ROT_STEPS[facing] ?? 0;
+  const entries = [];
+  for (let r = 0; r < 7; r++) {
+    for (let c = 0; c < 7; c++) {
+      const priority = parseInt(grid[r]?.[c]);
+      if (!priority || priority <= 0) continue; // skip "", "0", "BOT", NaN
+      const [rdr, rdc] = rotateRelativePos(r - 3, c - 3, rotSteps);
+      if (Math.max(Math.abs(rdr), Math.abs(rdc)) > sensorRange) continue;
+      entries.push({ priority, dr: rdr, dc: rdc });
+    }
+  }
+  return entries.sort((a, b) => a.priority - b.priority);
 }
 
 // ─── SCANNER ─────────────────────────────────────────────────────────────────
