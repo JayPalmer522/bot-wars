@@ -385,19 +385,22 @@ const ROTATE_BOT_RE = /^(?:Rotate|Veer) Bot (\d+) (?:right|left) to face (\w+) o
 // Group 1 = bot's space (1-based)
 const TARGETING_MAP_RE = /^Bot \d+ on space (\d+) activates targeting map/;
 
-// Matches: "Fired Master from space 5 and hit space 9 for 10 damage. HP: 60 → 50."
+// Matches any weapon hit: "Fired Master from space 5 and hit space 9 for ..."
+//   also: "Fired Self-Destruct blast (1 space) from space 5 and hit space 4 for ..."
 // Group 1 = from space, Group 2 = target space (both 1-based)
-const HIT_TARGET_RE = /^Fired \w+ from space (\d+) and hit space (\d+) for/;
+const HIT_TARGET_RE = /^Fired .+? from space (\d+) and hit space (\d+) for/;
 
 // Matches: "Bot 3 on space 9 is destroyed!"
 // Group 1 = space (1-based)
 const BOT_DESTROYED_RE = /^Bot \d+ on space (\d+) is destroyed!/;
 
-// Matches both self-destruct variants (log updated in Combat.js to include space + nearby bots):
-//   "Bot N activates self-destruct on space M! Nearby bots at space(s): A, B."
-//   "Bot N activates self-destruct on space M! No nearby bots."
-// Group 1 = bot's space, Group 2 = nearby bot spaces string (undefined when none)
-const SELF_DESTRUCT_RE = /^Bot \d+ activates self-destruct on space (\d+)! (?:Nearby bots at space\(s\): ([\d, ]+)\.|No nearby bots\.)/;
+// Matches: "Bot N activates self-destruct on space M!"
+// Group 1 = bot's space (1-based)
+const SELF_DESTRUCT_RE = /^Bot \d+ activates self-destruct on space (\d+)!/;
+
+// Matches: "Bot N is destroyed by self-destruct!" — no space number, handled via SELF_DESTRUCT_RE
+// (kept here only to document the format; not used for animation — SELF_DESTRUCT_RE clears the cell)
+const SELF_DESTRUCT_DEATH_RE = /^Bot \d+ is destroyed by self-destruct!/;
 
 // Draw any sprite image centred on a grid cell (0-based index).
 async function drawSpriteAtCell(ctx, src, index) {
@@ -518,22 +521,23 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState) {
       await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
 
     } else if (SELF_DESTRUCT_RE.test(entry)) {
-      const m          = entry.match(SELF_DESTRUCT_RE);
-      const cellIdx    = parseInt(m[1]) - 1;
-      const nearbyIdxs = m[2] ? m[2].split(',').map(s => parseInt(s.trim()) - 1) : [];
-      const rangeIdxs  = cellsInRange(cellIdx, 2);
+      const m         = entry.match(SELF_DESTRUCT_RE);
+      const cellIdx   = parseInt(m[1]) - 1;
+      const rangeIdxs = cellsInRange(cellIdx, 2);
 
-      // 1. White flash on self-destructing bot — scanning/announcement
+      // 1. White flash on self-destructing bot — announces activation
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashWhite.png', cellIdx);
       // 2. Red flash across entire blast radius (range 2)
       await flashMultiCells(canvas, 'DemiFlashRed.png', rangeIdxs);
-      // 3. White flash on every bot caught in the blast
-      await flashMultiCells(canvas, 'DemiFlashWhite.png', nearbyIdxs);
-      // 4. Large explosion on self-destructing bot, then clear its cell
+      // 3. Large explosion + clear cell
       await ANI_EXPLOSION_LARGE(canvas, cellIdx);
       await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
-      // 5. Simultaneous small explosions on all nearby bots hit by the blast
-      await smallExplosionMultiCells(canvas, nearbyIdxs);
+      // Nearby bots destroyed by blast get their own "is destroyed!" log lines
+      // handled by BOT_DESTROYED_RE as the replay continues.
+
+    } else if (SELF_DESTRUCT_DEATH_RE.test(entry)) {
+      // "Bot N is destroyed by self-destruct!" — no space number; cell already cleared above.
+
     }
   }
 }

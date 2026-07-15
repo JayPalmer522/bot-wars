@@ -8,19 +8,19 @@ Created by Jay Palmer ([JayPalmerBooks.com](https://jaypalmerbooks.com)).
 
 ## Current Status
 
-**Fully playable end-to-end, minus animation.**
+**Fully playable end-to-end, including canvas animation.**
 
 Working today:
 
 - All 10 screens and navigation
-- **Persistence** — bots, armies, orders lists, targeting maps, and component catalogs stored in IndexedDB via Dexie; workshops read/write real data; default content seeded on first run from `main.tsx`
+- **Persistence** — bots, armies, orders lists, targeting maps, and component catalogs stored in IndexedDB via Dexie; workshops read/write real data; default content (bots, armies, orders, targeting maps) seeded on first run from `main.tsx`
 - **User authentication** — `SplashScreen` and `CreateProfileScreen` wired to `Profiles.js` (SHA-256 password hashing)
 - **Combat engine** — fully operational: map placement, movement/turning in all 8 directions, weapon firing, damage, destruction, acquired-target fire, win/loss/draw detection
+- **Canvas animation** — `Animation.js` drives a full replay of the `COMBAT_RECORD` on an HTML5 canvas: bot placement, movement, rotation, weapon fire with sliding bullet sprites, flash overlays (white/yellow/red/dark-blue per event type), and three levels of canvas-drawn explosion (small = hit, medium = destroyed, large = self-destruct with blast radius)
 - **Results display** — reads the full `COMBAT_RECORD` transcript from Redux and renders it
 
 Not yet finished:
 
-- **Animation** — `Animation.js` is placeholder stubs; the combat engine produces a complete `COMBAT_RECORD` designed to drive animation, but the rendering loop doesn't exist yet
 - **Targeting map grid in combat** — bots scan for enemies by Chebyshev distance; the 7×7 priority grid saved by the Targeting Map Workshop is not yet used to order targets
 - **Bomb weapons** — catalog and stat extraction are implemented; `FIRE_BOMB_WEAPON` is not yet called from `EXECUTE_ORDERS_LIST`
 - **Profile stats** — `GET_USER_STATS` / `UPDATE_USER_STATS` in `Profiles.js` exist but are not called after combat
@@ -74,7 +74,7 @@ src/
   utils/                            # Game logic (plain JS)
     Combat.js                       # Battle simulation — fully wired into CombatScreen
     Profiles.js                     # Auth / profile CRUD (SHA-256; wired into Splash + CreateProfile screens)
-    Animation.js                    # Animation hooks (placeholder stubs — not yet wired)
+    Animation.js                    # Canvas animation engine — REPLAY_COMBAT_RECORD + all flash/explosion helpers
   screens/
     SplashScreen.tsx                # Login — calls ATTEMPT_LOGIN; navigates to /navigation on success
     CreateProfileScreen.tsx         # Create user profile — calls CREATE_PROFILE
@@ -84,9 +84,10 @@ src/
     ArmyWorkshopScreen.tsx          # Assemble 20-bot armies (reads/writes db; enforces 20-bot limit)
     OrdersListWorkshopScreen.tsx    # Program bot command sequences (reads/writes db)
     TargetingMapWorkshopScreen.tsx  # Set targeting priorities (7×7 grid; writes db)
-    CombatScreen.tsx                # Pick armies, set limits, call BEGIN_COMBAT, dispatch setCombatRecord
+    CombatScreen.tsx                # Pick armies, set limits, call BEGIN_COMBAT, canvas replay
     ResultsScreen.tsx               # Battle log display — reads combatRecord from Redux
-Graphics/                           # 116 PNG/PSD sprite assets
+public/
+  Graphics/                         # 116 PNG/PSD sprite assets — served at /Graphics/*
 ```
 
 ---
@@ -158,7 +159,7 @@ Exactly 20 bots (any mix of designs) constitute an army.
 
 `src/db/db.ts` defines `BotWarsDB` (Dexie, schema v4) with 13 tables: player content (`bots`, `armies`, `orderLists`, `targetMaps`, `profiles`) and seeded component catalogs (`botFrames`, `botEngines`, `botComputers`, `botArmors`, `botSensors`, `botMasters`, `botSecondaries`, `botBombs`). TypeScript interfaces live alongside the schema.
 
-`src/db/seed.ts` exposes `seedDefaults()` — idempotent (no-ops once `bots` is populated). It seeds all 8 component catalogs (9 entries each) plus three default bots (Small/Medium/Large), orders lists, and targeting maps. Called once from `main.tsx` at startup.
+`src/db/seed.ts` exposes `seedDefaults()` — seeds all 8 component catalogs (9 entries each) plus three default bots (Small/Medium/Large), three orders lists, three targeting maps, and three default armies; each block is guarded independently so later blocks run even if earlier data already exists. Also exports `migrateExistingData()`, which rewrites any legacy `botImage` strings in existing bot rows to valid sprite names. Both are called from `main.tsx` at startup.
 
 A `Bot` row stores each component as its **full description string** (e.g. `"Micro-bot = BF 10 slots, 10 ND, 130 weight, 100 cost."`), not a foreign key. Both the UI and the combat engine parse stats from these strings using regex helpers (`extractND`, `extractAD`, `extractSlots`, `extractPO`, etc.) defined in `Combat.js`.
 
@@ -221,9 +222,29 @@ Dark mode throughout: `#111` background, white Courier New text, dark blue (`#00
 
 ---
 
+## Canvas Animation (`src/utils/Animation.js`)
+
+`CombatScreen` renders an HTML5 `<canvas width="433" height="433">` (10 cells × 40px + 9 gaps × 3px + 2px padding each side). After `BEGIN_COMBAT` returns, `REPLAY_COMBAT_RECORD` walks the `COMBAT_RECORD` array and fires canvas effects for each recognised log event:
+
+| Log event | Visual |
+|---|---|
+| `begins turn on space N` | Yellow flash on bot's cell |
+| `movement blocked (off map)` | Red flash on bot's cell |
+| `movement blocked (occupied / backward)` | Dark-blue flash on bot's cell |
+| `activates targeting map` | White flash on bot's cell |
+| `Move Bot … from space A to B facing DIR` | White flash on from-cell → sprite drawn at to-cell → `Empty_Green` clears from-cell |
+| `Rotate/Veer Bot … to face DIR on space N` | White flash → updated sprite at same cell |
+| `Fired … hit space N for … damage` | White flash (shooter) → red flash (target) → bullet slides across canvas → small explosion |
+| `Bot N on space N is destroyed!` | Medium explosion → `Empty_Green` clears cell |
+| `Bot N activates self-destruct on space N!` | White flash → red blast radius (range 2) → white on nearby bots → large explosion → small explosions on nearby bots |
+
+Explosions are drawn with Canvas 2D radial gradients — no image files needed. Timing is controlled by two module-level variables (`microDelayMs` default 200 ms, `macroDelayMs` default 500 ms) configurable via on-screen buttons in `CombatScreen` before or during replay.
+
 ## Graphics
 
-Sprites live in `/Graphics/`. Naming conventions:
+Sprites live in `public/Graphics/` (served at `/Graphics/*` by Vite). Naming conventions:
 
 - **Bot sprites** — `B_I_[BotType]_P[Player]_D[Direction].png` — 8 directions (N, NE, E, SE, S, SW, W, NW), 2 players
 - **Bullet sprites** — `Bullet_All_D[Direction].png` — 8 directions
+- **Flash overlays** — `DemiFlashWhite.png`, `DemiFlashDarkBlue.png`, `DemiFlashRed.png`, `DemiFlashYellow.png`
+- **Valid botImage values** — `SmallBot`, `SmallMedBot`, `SmallShootingBomb`, `MedBot`, `MedBigBot`, `BigBot`, `LargeBomb`, `LargeShootingBomb`
