@@ -755,38 +755,47 @@ export async function EXECUTE_ORDERS_LIST(
 
     } else if (cmd === "Activate Self-Destruct") {
       const idx = findBotIndex(GAME_MAP_BOTS, botId);
+
+      // A real bomb weapon is required for blast damage; "NONE" weapons have no effect.
+      const hasBomb = !!CURRENT_BOT.weaponBomb && !CURRENT_BOT.weaponBomb.startsWith("NONE");
       const sdStats = botStatsMap[CURRENT_BOT.combatBotNumber];
-      const wd1 = sdStats?.bombWD1 ?? 0;
-      const wd2 = sdStats?.bombWD2 ?? 0;
+      // bombWD1 = full damage (adjacent, dist 1); bombWD2 = half damage (dist 2, pre-calculated)
+      const wd1 = hasBomb ? (sdStats?.bombWD1 ?? 0) : 0;
+      const wd2 = hasBomb ? (sdStats?.bombWD2 ?? 0) : 0;
 
       COMBAT_RECORD.push(`Bot ${botId} activates self-destruct on space ${idx + 1}!`);
 
       if (idx !== -1) {
         const selfCol = idx % 10, selfRow = Math.floor(idx / 10);
 
-        // Apply blast damage BEFORE clearing self so target scans remain valid
-        for (let ni = 0; ni < GAME_MAP_BOTS.length; ni++) {
-          if (ni === idx || GAME_MAP_BOTS[ni] === "0") continue;
-          const col = ni % 10, row = Math.floor(ni / 10);
-          const dist = Math.max(Math.abs(col - selfCol), Math.abs(row - selfRow));
-          let blastDamage = 0, blastLabel = "";
-          if (dist === 1 && wd1 > 0) {
-            blastDamage = wd1;
-            blastLabel  = "Self-Destruct blast (1 space)";
-          } else if (dist === 2 && wd2 > 0) {
-            blastDamage = wd2;
-            blastLabel  = "Self-Destruct blast (2 spaces, half damage)";
+        if (hasBomb) {
+          // Apply blast damage BEFORE clearing self so target scans remain valid.
+          // Both allied and enemy bots in range are hit.
+          for (let ni = 0; ni < GAME_MAP_BOTS.length; ni++) {
+            if (ni === idx || GAME_MAP_BOTS[ni] === "0") continue;
+            const col = ni % 10, row = Math.floor(ni / 10);
+            const dist = Math.max(Math.abs(col - selfCol), Math.abs(row - selfRow));
+            let blastDamage = 0, blastLabel = "";
+            if (dist === 1 && wd1 > 0) {
+              blastDamage = wd1;
+              blastLabel  = "Self-Destruct blast (full damage, 1 space)";
+            } else if (dist === 2 && wd2 > 0) {
+              blastDamage = wd2;
+              blastLabel  = "Self-Destruct blast (half damage, 2 spaces)";
+            }
+            if (blastDamage > 0) {
+              const targetBotId = GAME_MAP_BOTS[ni];
+              const r = applyWeaponHit(idx + 1, ni, blastDamage, blastLabel, targetBotId,
+                GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD);
+              if (r.damageDealt) damageDealt = true;
+              for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
+            }
           }
-          if (blastDamage > 0) {
-            const targetBotId = GAME_MAP_BOTS[ni];
-            const r = applyWeaponHit(idx + 1, ni, blastDamage, blastLabel, targetBotId,
-              GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE, COMBAT_RECORD);
-            if (r.damageDealt) damageDealt = true;
-            for (const d of r.newDeadBots) { newDeadBots.push(d); deadBotIds.add(d); }
-          }
+        } else {
+          COMBAT_RECORD.push(`Bot ${botId} has no bomb weapon — self-destruct causes no blast damage.`);
         }
 
-        // Destroy the self-destructing bot
+        // Destroy the self-destructing bot regardless of whether it had a bomb
         GAME_MAP_BOTS[idx]   = "0";
         GAME_MAP_FACING[idx] = "0";
         GAME_MAP_DAMAGE[idx] = "0";
