@@ -64,9 +64,12 @@ export default function CombatScreen() {
   const [microDelay, setMicroDelay] = useState(200);
   const [macroDelay, setMacroDelay] = useState(500);
   const [localRecord, setLocalRecord] = useState<any[]>([]);
+  const [liveRecord, setLiveRecord] = useState<any[]>([]);
+  const [isAnimating, setIsAnimating] = useState(false);
   const [combatResult, setCombatResult] = useState<CombatResultInfo | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const logBoxRef = useRef<HTMLDivElement>(null);
   const [showCover, setShowCover] = useState(true);
 
   const MICRO_PRESETS = [0, 100, 200, 500, 1000];
@@ -87,6 +90,12 @@ export default function CombatScreen() {
   useEffect(() => {
     if (canvasRef.current) BEGIN_ANIMATION(canvasRef.current);
   }, []);
+
+  useEffect(() => {
+    if (logBoxRef.current) {
+      logBoxRef.current.scrollTop = logBoxRef.current.scrollHeight;
+    }
+  }, [liveRecord]);
 
   const applyMicroDelay = (ms: number) => { setMicroDelay(ms); SET_MICRO_DELAY(ms); };
   const applyMacroDelay = (ms: number) => { setMacroDelay(ms); SET_MACRO_DELAY(ms); };
@@ -166,15 +175,20 @@ export default function CombatScreen() {
       const { outcome, victoryType } = detectOutcome(record);
       await recordBattle(outcome, p2Id, p2Name);
 
+      setLiveRecord([]);
+      setIsAnimating(true);
       if (canvasRef.current) {
         if (result.initialMapState) {
-          await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState);
+          await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState,
+            (entry: any) => setLiveRecord(prev => [...prev, entry])
+          );
         } else {
           await BEGIN_ANIMATION(canvasRef.current);
         }
         // Wait for one more paint so the final canvas frame is visible before the dialog opens
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       }
+      setIsAnimating(false);
 
       const p1Name = username ?? "Player 1";
       setCombatResult({
@@ -328,18 +342,19 @@ export default function CombatScreen() {
           {renderDropdown("Max Gold:", maxGold, setMaxGold, limits)}
           {renderDropdown("Max Weight:", maxWeight, setMaxWeight, limits)}
           {renderDropdown("Max Power:", maxPower, setMaxPower, limits)}
-          <Box sx={{ width: "95%", height: "400px", bgcolor: "#222", border: "2px solid gray", mt: 1, p: 1, overflowY: "auto", fontFamily: "Courier New", fontSize: "10pt", fontWeight: "bold", color: "white", textAlign: "left" }}>
-            {SHOW_COMBAT_RECORD === "TRUE" && localRecord.length > 0 ? (
-              localRecord.map((rec, i) =>
-                typeof rec === "string"
-                  ? <div key={i} style={{ marginBottom: "2px" }}>{rec}</div>
-                  : <div key={i} style={{ marginBottom: "6px", borderBottom: "1px solid #444", paddingBottom: "4px" }}>
-                      {Object.entries(rec).map(([k, v]) => <div key={k}>{k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}</div>)}
-                    </div>
-              )
-            ) : (
-              SHOW_COMBAT_RECORD === "TRUE" ? "Combat Record will appear here when combat begins" : "Combat Record display disabled"
-            )}
+          <Box ref={logBoxRef} sx={{ width: "95%", height: "280px", bgcolor: "#222", border: "2px solid gray", mt: 1, p: 1, overflowY: "auto", fontFamily: "Courier New", fontSize: "10pt", fontWeight: "bold", color: "white", textAlign: "left" }}>
+            {SHOW_COMBAT_RECORD === "TRUE" ? (() => {
+              const displayRecord = isAnimating ? liveRecord : localRecord;
+              return displayRecord.length > 0 ? (
+                displayRecord.map((rec, i) =>
+                  typeof rec === "string"
+                    ? <div key={i} style={{ marginBottom: "2px" }}>{rec}</div>
+                    : <div key={i} style={{ marginBottom: "6px", borderBottom: "1px solid #444", paddingBottom: "4px" }}>
+                        {Object.entries(rec).map(([k, v]) => <div key={k}>{k}: {typeof v === "object" ? JSON.stringify(v) : String(v)}</div>)}
+                      </div>
+                )
+              ) : "Combat Record will appear here when combat begins";
+            })() : "Combat Record display disabled"}
           </Box>
         </Box>
 

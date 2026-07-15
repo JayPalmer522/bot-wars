@@ -425,12 +425,13 @@ async function drawSpriteAtCell(ctx, src, index) {
  *   "self-destruct…"   → white flash (scanner), red blast radius, white on nearby bots,
  *                        large explosion + Empty_Green, small explosions on nearby bots
  */
-export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState) {
+export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEntry = null) {
   await BEGIN_ANIMATION(canvas, mapState);
 
   const ctx = canvas.getContext('2d');
 
   for (const entry of combatRecord) {
+    if (onEntry) onEntry(entry);
     if (typeof entry !== 'string') continue;
 
     if (BEGINS_TURN_RE.test(entry)) {
