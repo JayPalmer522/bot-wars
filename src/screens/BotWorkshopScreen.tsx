@@ -87,8 +87,17 @@ export default function BotWorkshopScreen() {
     if (ol) setOrdersList(ol.name);
   }
 
-  // Placeholder validation routine
-  function VERIFY_BOT_CHECK() {
+  function VERIFY_BOT_CHECK(): string {
+    if (!botName.trim())
+      return "Bot must have a name.";
+    if (!frame || !engine || !computer || !armor || !sensor || !weaponMaster || !weaponSecondary || !weaponBomb || !botImage)
+      return "All component selections must be filled in.";
+    if (!targetingMapNames.includes(targetingMap))
+      return `Targeting Map "${targetingMap}" is not a saved map. Select a valid Targeting Map.`;
+    if (!ordersListNames.includes(ordersList))
+      return `Orders List "${ordersList}" is not a saved list. Select a valid Orders List.`;
+    if (totalSlotsColor === "red")
+      return `Slots used exceed available slots (${totalSlotsDisplay}). Reduce component slots.`;
     return "Bot Valid";
   }
 
