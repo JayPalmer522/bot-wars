@@ -144,14 +144,12 @@ export async function seedUserDefaults(userId: number): Promise<void> {
   const trooperMapId_n  = trooperMapId  as number;
   const fortressMapId_n = fortressMapId as number;
 
-  // Light — Raider: Nova-Engine (move=3), Iron-Plate (200 AD), Adult-bot (50 slots)
-  // Bomb removed; freed 4 slots + traded Stone-Slingshot(5) → Spiked-Mace(4) for 1 more = 5 total
-  // → armor upgraded Copper-Plate(15,150 AD) → Iron-Plate(20,200 AD)
-  // Slots used: 18+1+20+2+5+4 = 50/50
+  // Light — Raider: Nova-Engine (move=3), Iron-Plate (200 AD), Adult-bot (40 slots)
+  // Slots used: 18+1+20+2+5+4 = 50/40
   const lightId = await db.bots.add({
     userId,
     name: "Raider",
-    frame:           "Adult-bot = BF 50 slots, 50 ND, 650 weight, 500 cost.",
+    frame:           "Adult-bot = BF 40 slots, 50 ND, 650 weight, 500 cost.",
     engine:          "Nova-Engine = BE 18 slots, 9000 PO, 900 weight, 2700 cost.",
     computer:        "Newton-Computer = BC 1 slots, 25 CI, 0 weight, 250 cost.",
     armor:           "Iron-Plate = FA 20 slots, 200 AD, 500 weight, 400 cost.",
@@ -162,21 +160,19 @@ export async function seedUserDefaults(userId: number): Promise<void> {
     botImage:        "SmallBot",
     ordersListId:    raiderId_n,
     targetMapId:     raiderMapId_n,
-    slotsUsed:       "50/50",
+    slotsUsed:       "50/40",
     totalWeight:     "2800",
     totalGold:       "6400",
     totalPower:      "750",
     move:            "3",
   });
 
-  // Medium — Trooper: Tiger-Engine (move=2), Uru-Plate (350 AD), Master-bot (60 slots)
-  // Bomb removed; freed 3 slots + traded Blunderbuss-Pistol(6) → Spiked-Mace(4) for 2 more = 5 total
-  // → armor upgraded Tungston-Plate(30,300 AD) → Uru-Plate(35,350 AD)
-  // Slots used: 10+1+35+3+7+4 = 60/60
+  // Medium — Trooper: Tiger-Engine (move=2), Uru-Plate (350 AD), Master-bot (45 slots)
+  // Slots used: 10+1+35+3+7+4 = 60/45
   const medId = await db.bots.add({
     userId,
     name: "Trooper",
-    frame:           "Master-bot = BF 60 slots, 60 ND, 780 weight, 600 cost.",
+    frame:           "Master-bot = BF 45 slots, 60 ND, 780 weight, 600 cost.",
     engine:          "Tiger-Engine = BE 10 slots, 5000 PO, 500 weight, 1500 cost.",
     computer:        "Tesla-Computer = BC 1 slots, 45 CI, 0 weight, 450 cost.",
     armor:           "Uru-Plate = FA 35 slots, 350 AD, 800 weight, 700 cost.",
@@ -187,20 +183,19 @@ export async function seedUserDefaults(userId: number): Promise<void> {
     botImage:        "MedBot",
     ordersListId:    trooperId_n,
     targetMapId:     trooperMapId_n,
-    slotsUsed:       "60/60",
+    slotsUsed:       "60/45",
     totalWeight:     "3060",
     totalGold:       "6550",
     totalPower:      "980",
     move:            "2",
   });
 
-  // Heavy — Fortress: Horse-Engine (move=1), Starcore-Plate (450 AD), Titan-bot (90 slots)
-  // Bomb removed; Starcore-Plate is already maximum armor — no armor upgrade possible.
-  // Slots used: 6+1+45+3+9+9 = 73/90 (17 unused)
+  // Heavy — Fortress: Horse-Engine (move=1), Starcore-Plate (450 AD), Titan-bot (60 slots)
+  // Slots used: 6+1+45+3+9+9 = 73/60
   const heavyId = await db.bots.add({
     userId,
     name: "Fortress",
-    frame:           "Titan-bot = BF 90 slots, 90 ND, 1170 weight, 900 cost.",
+    frame:           "Titan-bot = BF 60 slots, 90 ND, 1170 weight, 900 cost.",
     engine:          "Horse-Engine = BE 6 slots, 3000 PO, 300 weight, 900 cost.",
     computer:        "Tesla-Computer = BC 1 slots, 45 CI, 0 weight, 450 cost.",
     armor:           "Starcore-Plate = FA 45 slots, 450 AD, 1000 weight, 900 cost.",
@@ -211,7 +206,7 @@ export async function seedUserDefaults(userId: number): Promise<void> {
     botImage:        "BigBot",
     ordersListId:    fortressId_n,
     targetMapId:     fortressMapId_n,
-    slotsUsed:       "73/90",
+    slotsUsed:       "73/60",
     totalWeight:     "3910",
     totalGold:       "8100",
     totalPower:      "1440",

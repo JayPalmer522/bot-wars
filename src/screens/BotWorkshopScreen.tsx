@@ -329,14 +329,14 @@ export default function BotWorkshopScreen() {
         <Box sx={{ width: "90%", justifyItems: "center"}}>
           {renderDropdown("Select Bot Frame:", frame, setFrame, [
             "Micro-bot = BF 10 slots, 10 ND, 130 weight, 100 cost.",
-            "Mini-bot = BF 20 slots, 20 ND, 160 weight, 200 cost.",
+            "Mini-bot = BF 15 slots, 20 ND, 160 weight, 200 cost.",
             "Baby-bot = BF 30 slots, 30 ND, 190 weight, 300 cost.",
-            "Junior-bot = BF 40 slots, 40 ND, 520 weight, 400 cost.",
-            "Adult-bot = BF 50 slots, 50 ND, 650 weight, 500 cost.",
-            "Master-bot = BF 60 slots, 60 ND, 780 weight, 600 cost.",
-            "Monster-bot = BF 70 slots, 70 ND, 910 weight, 700 cost.",
-            "Giant-bot = BF 80 slots, 80 ND, 1040 weight, 800 cost.",
-            "Titan-bot = BF 90 slots, 90 ND, 1170 weight, 900 cost.",
+            "Junior-bot = BF 35 slots, 40 ND, 520 weight, 400 cost.",
+            "Adult-bot = BF 40 slots, 50 ND, 650 weight, 500 cost.",
+            "Master-bot = BF 45 slots, 60 ND, 780 weight, 600 cost.",
+            "Monster-bot = BF 50 slots, 70 ND, 910 weight, 700 cost.",
+            "Giant-bot = BF 55 slots, 80 ND, 1040 weight, 800 cost.",
+            "Titan-bot = BF 60 slots, 90 ND, 1170 weight, 900 cost.",
           ])}
 
           {renderDropdown("Select Bot Engine:", engine, setEngine, [

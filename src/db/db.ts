@@ -151,6 +151,48 @@ export class BotWarsDB extends Dexie {
         if (bot.botImage === "SmallMedBot") bot.botImage = "SmallBot";
       })
     );
+
+    // v8: reduce frame slot counts (Mini 20→15, Junior 40→35, Adult 50→40,
+    //      Master 60→45, Monster 70→50, Giant 80→55, Titan 90→60)
+    this.version(8).stores({}).upgrade(async tx => {
+      const FRAME_SLOT_MAP: Record<string, number> = {
+        "Mini-bot":    15,
+        "Junior-bot":  35,
+        "Adult-bot":   40,
+        "Master-bot":  45,
+        "Monster-bot": 50,
+        "Giant-bot":   55,
+        "Titan-bot":   60,
+      };
+
+      const FRAME_DESC_MAP: Record<string, string> = {
+        "Mini-bot = BF 20 slots, 20 ND, 160 weight, 200 cost.":    "Mini-bot = BF 15 slots, 20 ND, 160 weight, 200 cost.",
+        "Junior-bot = BF 40 slots, 40 ND, 520 weight, 400 cost.":  "Junior-bot = BF 35 slots, 40 ND, 520 weight, 400 cost.",
+        "Adult-bot = BF 50 slots, 50 ND, 650 weight, 500 cost.":   "Adult-bot = BF 40 slots, 50 ND, 650 weight, 500 cost.",
+        "Master-bot = BF 60 slots, 60 ND, 780 weight, 600 cost.":  "Master-bot = BF 45 slots, 60 ND, 780 weight, 600 cost.",
+        "Monster-bot = BF 70 slots, 70 ND, 910 weight, 700 cost.": "Monster-bot = BF 50 slots, 70 ND, 910 weight, 700 cost.",
+        "Giant-bot = BF 80 slots, 80 ND, 1040 weight, 800 cost.":  "Giant-bot = BF 55 slots, 80 ND, 1040 weight, 800 cost.",
+        "Titan-bot = BF 90 slots, 90 ND, 1170 weight, 900 cost.":  "Titan-bot = BF 60 slots, 90 ND, 1170 weight, 900 cost.",
+      };
+
+      // Update slots in the botFrames catalog
+      await tx.table("botFrames").toCollection().modify((frame: any) => {
+        const newSlots = FRAME_SLOT_MAP[frame.name];
+        if (newSlots !== undefined) frame.slots = newSlots;
+      });
+
+      // Update frame description string and slotsUsed denominator in every bot row
+      await tx.table("bots").toCollection().modify((bot: any) => {
+        const newDesc = FRAME_DESC_MAP[bot.frame];
+        if (!newDesc) return;
+        bot.frame = newDesc;
+        const capMatch = newDesc.match(/(\d+)\s+slots/);
+        const usedMatch = (bot.slotsUsed ?? "").match(/^(\d+)\//);
+        if (capMatch && usedMatch) {
+          bot.slotsUsed = `${usedMatch[1]}/${capMatch[1]}`;
+        }
+      });
+    });
   }
 }
 

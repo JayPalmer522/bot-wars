@@ -9,15 +9,15 @@ async function seedComponents(): Promise<void> {
   if (frameCount > 0) return;
 
   await db.botFrames.bulkAdd([
-    { name: "Micro-bot", slots: 10, nd: 10, weight: 130, cost: 100 },
-    { name: "Mini-bot", slots: 20, nd: 20, weight: 160, cost: 200 },
-    { name: "Baby-bot", slots: 30, nd: 30, weight: 190, cost: 300 },
-    { name: "Junior-bot", slots: 40, nd: 40, weight: 520, cost: 400 },
-    { name: "Adult-bot", slots: 50, nd: 50, weight: 650, cost: 500 },
-    { name: "Master-bot", slots: 60, nd: 60, weight: 780, cost: 600 },
-    { name: "Monster-bot", slots: 70, nd: 70, weight: 910, cost: 700 },
-    { name: "Giant-bot", slots: 80, nd: 80, weight: 1040, cost: 800 },
-    { name: "Titan-bot", slots: 90, nd: 90, weight: 1170, cost: 900 },
+    { name: "Micro-bot",   slots: 10, nd: 10, weight: 130,  cost: 100 },
+    { name: "Mini-bot",    slots: 15, nd: 20, weight: 160,  cost: 200 },
+    { name: "Baby-bot",    slots: 30, nd: 30, weight: 190,  cost: 300 },
+    { name: "Junior-bot",  slots: 35, nd: 40, weight: 520,  cost: 400 },
+    { name: "Adult-bot",   slots: 40, nd: 50, weight: 650,  cost: 500 },
+    { name: "Master-bot",  slots: 45, nd: 60, weight: 780,  cost: 600 },
+    { name: "Monster-bot", slots: 50, nd: 70, weight: 910,  cost: 700 },
+    { name: "Giant-bot",   slots: 55, nd: 80, weight: 1040, cost: 800 },
+    { name: "Titan-bot",   slots: 60, nd: 90, weight: 1170, cost: 900 },
   ]);
 
   await db.botEngines.bulkAdd([
