@@ -325,6 +325,14 @@ export default function ArmyWorkshopScreen() {
           >
             Remove selected Bot
           </Button>
+
+          <Button
+            variant="contained"
+            sx={leftButtonStyle}
+            onClick={() => { setArmyBots([]); setSelectedBotIndices(new Set()); }}
+          >
+            Clear List
+          </Button>
         </Box>
 
         {/* Right Column: Scrollable List */}
