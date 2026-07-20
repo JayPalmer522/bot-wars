@@ -23,6 +23,7 @@ export default defineConfig(async () => {
     console.log(`\n  Port 5173 in use, using ${port}\n`);
   }
   return {
+    base: "/botwars/",
     plugins: [react()],
     server: {
       port,

@@ -15,7 +15,7 @@ import PlayerStatsScreen from "./screens/PlayerStatsScreen";
 
 export default function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename="/botwars">
       <Routes>
         <Route path="/" element={<SplashScreen />} />
         <Route path="/create-profile" element={<CreateProfileScreen />} />
