@@ -347,10 +347,89 @@ export async function GET_USER_STATS(userId) {
 }
 
 /**
+ * UPDATE_BATTLE_RESULT
+ *
+ * Records the outcome of one battle for the participating players, then
+ * recalculates win percentages and percentile-based ranks for all profiles.
+ * Call this after BEGIN_COMBAT returns, before animation begins.
+ *
+ * outcome: "player1" | "player2" | "draw" | "both-lose"
+ * player1Id: always the logged-in player's userId
+ * player2Id: second player's userId (null for vs-computer)
+ */
+export async function UPDATE_BATTLE_RESULT(outcome, player1Id, player2Id = null) {
+  const p1Won = outcome === 'player1';
+  const p2Won = outcome === 'player2';
+
+  await _incrementStats(player1Id, p1Won ? 1 : 0, p1Won ? 0 : 1);
+  if (player2Id !== null) {
+    await _incrementStats(player2Id, p2Won ? 1 : 0, p2Won ? 0 : 1);
+  }
+
+  await _recalculateAllRanks();
+}
+
+// Adds one battle result to a single profile's stats.
+async function _incrementStats(userId, wins, losses) {
+  const user = await db.profiles.get(userId);
+  if (!user) return;
+  const s = user.stats || { wins: 0, losses: 0, totalBattles: 0 };
+  await db.profiles.update(userId, {
+    stats: {
+      ...s,
+      wins:         (s.wins         || 0) + wins,
+      losses:       (s.losses       || 0) + losses,
+      totalBattles: (s.totalBattles || 0) + 1,
+    },
+  });
+}
+
+// Returns the rank string for a given percentile (0–100).
+function _rankForPercentile(percentile) {
+  if (percentile >= 90) return 'Admiral';
+  if (percentile >= 80) return 'Commodore';
+  if (percentile >= 50) return 'Captain';
+  if (percentile >= 30) return 'Commander';
+  if (percentile >= 20) return 'Lieutenant';
+  return 'Ensign';
+}
+
+// Loads all profiles, calculates each player's percentile position among all
+// players' win percentages, assigns a rank, and writes both values back.
+async function _recalculateAllRanks() {
+  const allProfiles = await db.profiles.toArray();
+  if (allProfiles.length === 0) return;
+
+  // Build win% array (0 for players with no battles yet).
+  const playerData = allProfiles.map(p => {
+    const s = p.stats || { wins: 0, losses: 0, totalBattles: 0 };
+    const winPct = s.totalBattles > 0 ? (s.wins / s.totalBattles) * 100 : 0;
+    return { id: p.id, stats: s, winPct };
+  });
+
+  const allWinPcts = playerData.map(p => p.winPct);
+  const N = playerData.length;
+
+  for (const player of playerData) {
+    if (player.id === undefined) continue;
+    // Percentile = fraction of all players with a STRICTLY LOWER win%.
+    // Tied players get the same percentile (and therefore the same rank).
+    const lowerCount = allWinPcts.filter(pct => pct < player.winPct).length;
+    const percentile  = (lowerCount / N) * 100;
+    const rank        = _rankForPercentile(percentile);
+    const winPercentage = Math.round(player.winPct * 10) / 10;
+
+    await db.profiles.update(player.id, {
+      stats: { ...player.stats, winPercentage, rank },
+    });
+  }
+}
+
+/**
  * UPDATE_USER_STATS
- * 
+ *
  * Updates user combat statistics after a battle.
- * 
+ *
  * @param {number} userId - User ID
  * @param {number} wins - Number of wins to add
  * @param {number} losses - Number of losses to add

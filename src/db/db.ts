@@ -77,6 +77,8 @@ export interface Profile {
     wins: number;
     losses: number;
     totalBattles: number;
+    winPercentage?: number;
+    rank?: string;
   };
 }
 

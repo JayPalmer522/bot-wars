@@ -10,7 +10,7 @@ import { RootState } from "../store/store";
 import { addLogEntry, clearLog, setCombatRecord } from "../store/battleLogSlice";
 import { BEGIN_COMBAT, SHOW_COMBAT_RECORD } from "../utils/Combat";
 import { BEGIN_ANIMATION, REPLAY_COMBAT_RECORD, SET_MICRO_DELAY, SET_MACRO_DELAY } from "../utils/Animation";
-import { ATTEMPT_LOGIN } from "../utils/Profiles";
+import { ATTEMPT_LOGIN, UPDATE_BATTLE_RESULT } from "../utils/Profiles";
 import { db } from "../db/db";
 
 type Mode = "vs-computer" | "vs-player";
@@ -66,6 +66,7 @@ export default function CombatScreen() {
   const [localRecord, setLocalRecord] = useState<any[]>([]);
   const [liveRecord, setLiveRecord] = useState<any[]>([]);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [currentTurnText, setCurrentTurnText] = useState("");
   const [combatResult, setCombatResult] = useState<CombatResultInfo | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -174,13 +175,29 @@ export default function CombatScreen() {
 
       const { outcome, victoryType } = detectOutcome(record);
       await recordBattle(outcome, p2Id, p2Name);
+      await UPDATE_BATTLE_RESULT(outcome, userId!, p2Id);
 
+      const p1Name = username ?? "Player 1";
+      const TURN_START_RE = /^\[INFO\] Bot \d+ \(army (\d+), "(.+)"\) begins turn/;
+
+      setCurrentTurnText("");
       setLiveRecord([]);
       setIsAnimating(true);
       if (canvasRef.current) {
         if (result.initialMapState) {
           await REPLAY_COMBAT_RECORD(canvasRef.current, record, result.initialMapState,
-            (entry: any) => setLiveRecord(prev => [...prev, entry])
+            (entry: any) => {
+              setLiveRecord(prev => [...prev, entry]);
+              if (typeof entry === "string") {
+                const m = entry.match(TURN_START_RE);
+                if (m) {
+                  const armyNum = parseInt(m[1]);
+                  const botName = m[2];
+                  const playerName = armyNum === 1 ? p1Name : p2Name;
+                  setCurrentTurnText(`${playerName}   ${botName}`);
+                }
+              }
+            }
           );
         } else {
           await BEGIN_ANIMATION(canvasRef.current);
@@ -189,8 +206,7 @@ export default function CombatScreen() {
         await new Promise<void>(resolve => requestAnimationFrame(() => resolve()));
       }
       setIsAnimating(false);
-
-      const p1Name = username ?? "Player 1";
+      setCurrentTurnText("Game Over");
       setCombatResult({
         outcome,
         victoryType,
@@ -358,18 +374,26 @@ export default function CombatScreen() {
           </Box>
         </Box>
 
-        {/* CENTER: canvas with cover overlay */}
-        <Box sx={{ position: "relative", display: "inline-block" }}>
-          <canvas ref={canvasRef} width={433} height={433} style={{ border: "2px solid gray", display: "block" }} />
-          {showCover && (
-            <Box
-              component="img"
-              src="/Graphics/ComBatMapCover3.png"
-              alt=""
-              onClick={() => window.open("https://jaypalmerbooks.com", "_blank")}
-              sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "block", cursor: "pointer" }}
-            />
-          )}
+        {/* CENTER: canvas with cover overlay + turn indicator */}
+        <Box sx={{ display: "flex", flexDirection: "column", alignItems: "center" }}>
+          <Box sx={{ position: "relative", display: "inline-block" }}>
+            <canvas ref={canvasRef} width={433} height={433} style={{ border: "2px solid gray", display: "block" }} />
+            {showCover && (
+              <Box
+                component="img"
+                src="/Graphics/ComBatMapCover3.png"
+                alt=""
+                onClick={() => window.open("https://jaypalmerbooks.com", "_blank")}
+                sx={{ position: "absolute", top: 0, left: 0, width: "100%", height: "100%", display: "block", cursor: "pointer" }}
+              />
+            )}
+          </Box>
+          <Typography sx={{
+            fontFamily: "Courier New", fontSize: "14pt", fontWeight: "bold",
+            color: "white", mt: 1, minHeight: "1.6em", textAlign: "center", width: "100%",
+          }}>
+            {currentTurnText}
+          </Typography>
         </Box>
 
         {/* RIGHT: mode controls */}
