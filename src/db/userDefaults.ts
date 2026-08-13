@@ -17,7 +17,7 @@ const RAIDER_ORDERS = [
   "Turn Right",
   "Move Forward 1",
   "If Movement Blocked by Ally ...",
-  "Angle Left",
+  "Veer Left",
   "Move Forward 2",
   "If Your Armor is Below 300 ...",
   "Move Backward 2",

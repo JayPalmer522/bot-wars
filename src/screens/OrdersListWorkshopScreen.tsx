@@ -155,7 +155,7 @@ export default function OrdersListWorkshopScreen() {
     "Move Backward 3",
     "Turn Left",
     "Turn Right",
-    "Angle Left",
+    "Veer Left",
     "Angle Right",
     "Move toward located Enemy",
     "Fire Master Weapon",
