@@ -28,6 +28,33 @@ interface CombatResultInfo {
   mode: "vs-computer" | "vs-player";
 }
 
+function parseLim(s: string): number | null {
+  return s === "No limits" ? null : parseInt(s.replace(" Max", "").replace(",", ""));
+}
+
+async function loadFilteredArmies(forUserId: number, maxGold: string, maxWeight: string, maxPower: string): Promise<string[]> {
+  const goldLim   = parseLim(maxGold);
+  const weightLim = parseLim(maxWeight);
+  const powerLim  = parseLim(maxPower);
+
+  const armies = await db.armies.where("userId").equals(forUserId).toArray();
+  const qualified: string[] = [];
+  for (const army of armies) {
+    const bots = await db.bots.where("id").anyOf(army.botIds).toArray();
+    const allPass = bots.every(bot => {
+      const g = parseInt(bot.totalGold   || "0");
+      const w = parseInt(bot.totalWeight || "0");
+      const p = parseInt(bot.totalPower  || "0");
+      if (goldLim   !== null && g > goldLim)   return false;
+      if (weightLim !== null && w > weightLim) return false;
+      if (powerLim  !== null && p > powerLim)  return false;
+      return true;
+    });
+    if (allPass) qualified.push(army.name);
+  }
+  return qualified.sort();
+}
+
 function detectOutcome(record: any[]): { outcome: "player1" | "player2" | "draw" | "both-lose"; victoryType: string } {
   const text = record.filter(r => typeof r === "string").join(" ");
   if (/Both Armies Lose|both armies destroyed/i.test(text)) return { outcome: "both-lose", victoryType: "Both Armies Destroyed" };
@@ -84,14 +111,26 @@ export default function CombatScreen() {
 
   useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
 
+  // Reload p1 armies whenever userId or any limit changes
   useEffect(() => {
     if (!userId) return;
-    db.armies.where("userId").equals(userId).toArray().then(armies => {
-      const names = armies.map(a => a.name).sort();
+    loadFilteredArmies(userId, maxGold, maxWeight, maxPower).then(names => {
       setP1ArmyOptions(names);
-      if (names.length > 0) { setArmy1(names[0]); setArmy2(names[0]); }
+      setArmy1(prev => names.includes(prev) ? prev : (names[0] ?? ""));
+      if (mode === "vs-computer") {
+        setArmy2(prev => names.includes(prev) ? prev : (names[0] ?? ""));
+      }
     });
-  }, [userId]);
+  }, [userId, maxGold, maxWeight, maxPower, mode]);
+
+  // Reload p2 armies whenever p2UserId or any limit changes
+  useEffect(() => {
+    if (!p2UserId) { setP2ArmyOptions([]); return; }
+    loadFilteredArmies(p2UserId, maxGold, maxWeight, maxPower).then(names => {
+      setP2ArmyOptions(names);
+      setArmy2(prev => names.includes(prev) ? prev : (names[0] ?? ""));
+    });
+  }, [p2UserId, maxGold, maxWeight, maxPower]);
 
   useEffect(() => {
     if (canvasRef.current) BEGIN_ANIMATION(canvasRef.current);
@@ -126,13 +165,10 @@ export default function CombatScreen() {
     if (result.userId === userId) { setP2StatusMsg("Player 2 must be a different player."); return; }
     const p2Id   = result.userId!;
     const p2Name = result.userData?.username ?? p2Username;
-    const armies = await db.armies.where("userId").equals(p2Id).toArray();
-    const names  = armies.map(a => a.name).sort();
     setP2UserId(p2Id);
     setP2DisplayName(p2Name);
-    setP2ArmyOptions(names);
-    setArmy2(names[0] ?? "");
     setPvpStep("p2-army");
+    // p2ArmyOptions and army2 are set by the [p2UserId, maxGold, maxWeight, maxPower] effect
   }
 
   async function recordBattle(outcome: "player1" | "player2" | "draw" | "both-lose", p2Id: number | null, p2Name: string) {
