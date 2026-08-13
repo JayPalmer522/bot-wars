@@ -348,6 +348,14 @@ export default function OrdersListWorkshopScreen() {
           >
             Remove Selected Command(s)
           </Button>
+
+          <Button
+            variant="contained"
+            sx={leftButtonStyle}
+            onClick={() => { setCommands([]); setSelectedIndices(new Set()); }}
+          >
+            Clear List
+          </Button>
         </Box>
 
         {/* Right Column: Scrollable List */}
