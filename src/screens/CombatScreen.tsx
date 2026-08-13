@@ -21,6 +21,11 @@ interface CombatResultInfo {
   victoryType: string;
   winnerName: string;
   loserName: string;
+  p1Name: string;
+  p1Rank: string;
+  p2Name: string;
+  p2Rank: string;
+  mode: "vs-computer" | "vs-player";
 }
 
 function detectOutcome(record: any[]): { outcome: "player1" | "player2" | "draw" | "both-lose"; victoryType: string } {
@@ -222,6 +227,11 @@ export default function CombatScreen() {
         victoryType,
         winnerName: outcome === "player1" ? p1Name : outcome === "player2" ? p2Name : "",
         loserName:  outcome === "player1" ? p2Name : outcome === "player2" ? p1Name : "",
+        p1Name,
+        p1Rank,
+        p2Name,
+        p2Rank,
+        mode,
       });
     } else {
       alert(result.message);
@@ -454,25 +464,45 @@ export default function CombatScreen() {
         </DialogTitle>
         <DialogContent sx={{ textAlign: "center", pt: 2 }}>
           {combatResult && (() => {
-            const { outcome, victoryType, winnerName, loserName } = combatResult;
+            const { outcome, victoryType, winnerName, loserName, p1Name, p1Rank, p2Name, p2Rank, mode } = combatResult;
+            const isVsHuman = mode === "vs-player";
+            const computerWins = mode === "vs-computer" && outcome === "player2";
+            const winnerRank = outcome === "player1" ? p1Rank : p2Rank;
+            const loserRank  = outcome === "player1" ? p2Rank : p1Rank;
+            const winnerDisplay = computerWins ? winnerName : `${winnerRank}   ${winnerName}`;
+            const loserIsComputer = mode === "vs-computer" && outcome === "player1";
+            const loserDisplay  = loserIsComputer ? loserName : `${loserRank}   ${loserName}`;
+
             if (outcome === "both-lose") return (
               <>
                 <Typography sx={resultHeadStyle("#ff8888")}>Both Armies Destroyed!</Typography>
                 <Typography sx={resultSubStyle}>No survivors on either side.</Typography>
+                <Typography sx={{ ...resultSubStyle, color: "#aaa", mt: 1 }}>
+                  {isVsHuman
+                    ? `${p1Rank}   ${p1Name}   vs   ${p2Rank}   ${p2Name}`
+                    : `${p1Rank}   ${p1Name}   vs   Computer`
+                  }
+                </Typography>
               </>
             );
             if (outcome === "draw") return (
               <>
                 <Typography sx={resultHeadStyle("#ffdd88")}>Draw!</Typography>
                 <Typography sx={resultSubStyle}>Neither army could claim victory.</Typography>
+                <Typography sx={{ ...resultSubStyle, color: "#aaa", mt: 1 }}>
+                  {isVsHuman
+                    ? `${p1Rank}   ${p1Name}   vs   ${p2Rank}   ${p2Name}`
+                    : `${p1Rank}   ${p1Name}   vs   Computer`
+                  }
+                </Typography>
               </>
             );
             return (
               <>
-                <Typography sx={resultHeadStyle("lightgreen")}>{winnerName} Wins!</Typography>
+                <Typography sx={resultHeadStyle("lightgreen")}>{winnerDisplay} Wins!</Typography>
                 <Typography sx={resultSubStyle}>{victoryType}</Typography>
                 <Typography sx={{ ...resultSubStyle, color: "#aaa", mt: 1 }}>
-                  Defeated: {loserName}
+                  Defeated: {loserDisplay}
                 </Typography>
               </>
             );
