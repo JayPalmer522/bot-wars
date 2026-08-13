@@ -35,6 +35,9 @@ export default function ArmyWorkshopScreen() {
   const [armyBots, setArmyBots] = useState<string[]>([]);
   const [selectedBotIndices, setSelectedBotIndices] = useState<Set<number>>(new Set());
 
+  // Per-bot stat lookup (name → totals) for army summary row
+  const [botStatsMap, setBotStatsMap] = useState<Map<string, { gold: number; weight: number; power: number }>>(new Map());
+
   useEffect(() => { if (userId === null) navigate("/"); }, [userId]);
 
   // Load army and bot names on mount
@@ -48,6 +51,15 @@ export default function ArmyWorkshopScreen() {
       bots.sort((a, b) => a.name.localeCompare(b.name));
       setBotNames(bots.map(b => b.name));
       if (bots.length > 0) setSelectedBot(bots[0].name);
+      const statsMap = new Map<string, { gold: number; weight: number; power: number }>();
+      for (const bot of bots) {
+        statsMap.set(bot.name, {
+          gold:   parseInt(bot.totalGold   || "0") || 0,
+          weight: parseInt(bot.totalWeight || "0") || 0,
+          power:  parseInt(bot.totalPower  || "0") || 0,
+        });
+      }
+      setBotStatsMap(statsMap);
     }
     loadData();
   }, [userId]);
@@ -337,12 +349,23 @@ export default function ArmyWorkshopScreen() {
 
         {/* Right Column: Scrollable List */}
         <Box sx={{ display: "flex", flexDirection: "column", height: "100%" }}>
-          <Typography sx={{
-            fontFamily: "Courier New", fontWeight: "bold", fontSize: "12pt",
-            color: armyBots.length === 20 ? "lightgreen" : "white", mb: "4px",
-          }}>
-            Bots: {armyBots.length} / 20
-          </Typography>
+          {/* Summary counters */}
+          {(() => {
+            const totalCost   = armyBots.reduce((s, n) => s + (botStatsMap.get(n)?.gold   ?? 0), 0);
+            const totalWeight = armyBots.reduce((s, n) => s + (botStatsMap.get(n)?.weight ?? 0), 0);
+            const totalPower  = armyBots.reduce((s, n) => s + (botStatsMap.get(n)?.power  ?? 0), 0);
+            const counterStyle = { fontFamily: "Courier New", fontWeight: "bold", fontSize: "12pt", color: "white" };
+            return (
+              <Box sx={{ display: "flex", gap: 4, mb: "4px", flexWrap: "wrap" }}>
+                <Typography sx={{ ...counterStyle, color: armyBots.length === 20 ? "lightgreen" : "white" }}>
+                  Bots: {armyBots.length} / 20
+                </Typography>
+                <Typography sx={counterStyle}>Cost: {totalCost.toLocaleString()}</Typography>
+                <Typography sx={counterStyle}>Weight: {totalWeight.toLocaleString()}</Typography>
+                <Typography sx={counterStyle}>Power: {totalPower.toLocaleString()}</Typography>
+              </Box>
+            );
+          })()}
         <Paper
           elevation={3}
           sx={{
