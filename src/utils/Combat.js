@@ -601,7 +601,10 @@ export async function EXECUTE_ORDERS_LIST(
       }
 
     } else if (cmd === "Fire Seconday Weapon" || cmd === "Fire Secondary Weapon") {
-      if (secondaryFired) {
+      const noSecondary = !CURRENT_BOT.weaponSecondary || CURRENT_BOT.weaponSecondary.toUpperCase().startsWith("NONE");
+      if (noSecondary) {
+        COMBAT_RECORD.push(`Bot ${botId}: No secondary weapon — Fire Secondary skipped.`);
+      } else if (secondaryFired) {
         COMBAT_RECORD.push(`Bot ${botId}: Secondary Weapon already fired this turn — skipped.`);
       } else {
         const acquired = acquiredTargetsMap[botId] ?? [];
@@ -616,6 +619,7 @@ export async function EXECUTE_ORDERS_LIST(
 
     } else if (cmd === "Fire All") {
       const acquired = acquiredTargetsMap[botId] ?? [];
+      const noSecondary = !CURRENT_BOT.weaponSecondary || CURRENT_BOT.weaponSecondary.toUpperCase().startsWith("NONE");
       if (!masterFired) {
         const r1 = fireMasterWeapon(
           CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
@@ -627,7 +631,9 @@ export async function EXECUTE_ORDERS_LIST(
       } else {
         COMBAT_RECORD.push(`Bot ${botId}: Master Weapon already fired this turn — skipped in Fire All.`);
       }
-      if (!secondaryFired) {
+      if (noSecondary) {
+        COMBAT_RECORD.push(`Bot ${botId}: No secondary weapon — secondary skipped in Fire All.`);
+      } else if (!secondaryFired) {
         const r2 = fireSecondaryWeapon(
           CURRENT_BOT, GAME_MAP_BOTS, GAME_MAP_FACING, GAME_MAP_DAMAGE,
           COMBAT_RECORD, botStatsMap, ALL_BOTS_IN_COMBAT_LIST, acquired[1] ?? null
