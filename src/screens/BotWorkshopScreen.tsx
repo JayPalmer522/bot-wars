@@ -97,7 +97,7 @@ export default function BotWorkshopScreen() {
     if (!ordersListNames.includes(ordersList))
       return `Orders List "${ordersList}" is not a saved list. Select a valid Orders List.`;
     if (totalSlotsColor === "red")
-      return `Slots used exceed available slots (${totalSlotsDisplay}). Reduce component slots.`;
+      return "This Bot has too many slots used for the number of available slots.";
     return "Bot Valid";
   }
 
@@ -108,6 +108,10 @@ export default function BotWorkshopScreen() {
   async function handleSave() {
     if (!botName.trim()) {
       alert("Every Bot must have a name.");
+      return;
+    }
+    if (totalSlotsColor === "red") {
+      alert("This Bot has too many slots used for the number of available slots.");
       return;
     }
     const tm = await db.targetMaps.where("[userId+name]").equals([userId, targetingMap]).first();
