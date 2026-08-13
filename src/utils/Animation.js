@@ -19,6 +19,12 @@ function loadImage(src) {
   });
 }
 
+// Fire-and-forget audio playback — silently ignored if browser blocks autoplay.
+function playSound(filename) {
+  const audio = new Audio(`/Sounds/${filename}`);
+  audio.play().catch(() => {});
+}
+
 function cellXY(index) {
   const col = index % 10;
   const row = Math.floor(index / 10);
@@ -427,6 +433,7 @@ async function drawSpriteAtCell(ctx, src, index) {
  */
 export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEntry = null) {
   await BEGIN_ANIMATION(canvas, mapState);
+  playSound('_GameStarts.wav');
 
   const ctx = canvas.getContext('2d');
 
@@ -461,6 +468,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       );
       if (!bot) continue;
 
+      playSound('_BotMoves.wav');
       // 1. White flash on the from-cell — announces movement
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashWhite.png', fromIdx);
 
@@ -485,6 +493,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       );
       if (!bot) continue;
 
+      playSound('_BotVeers.wav');
       // 1. White flash on the bot's cell — announces rotation
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashWhite.png', cellIdx);
 
@@ -498,6 +507,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
     } else if (TARGETING_MAP_RE.test(entry)) {
       const m = entry.match(TARGETING_MAP_RE);
       const cellIdx = parseInt(m[1]) - 1;
+      playSound('_Scan4Enemies.wav');
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashWhite.png', cellIdx);
 
     } else if (HIT_TARGET_RE.test(entry)) {
@@ -506,6 +516,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       const toIdx   = parseInt(m[2]) - 1;
       const dir     = bulletDirection(fromIdx, toIdx);
 
+      playSound('_BotFires.wav');
       // 1. White flash on shooter — weapon fired
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashWhite.png', fromIdx);
       // 2. Red flash on target — hit confirmed
@@ -513,11 +524,13 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 3. Bullet slides from shooter to target
       await animateBulletSlide(canvas, `/Graphics/Bullet_All_D${dir}.png`, fromIdx, toIdx);
       // 4. Small explosion at target
+      playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_SMALL(canvas, toIdx);
 
     } else if (BOT_DESTROYED_RE.test(entry)) {
       const m = entry.match(BOT_DESTROYED_RE);
       const cellIdx = parseInt(m[1]) - 1;
+      playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_MEDIUM(canvas, cellIdx);
       await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
 
@@ -531,6 +544,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 2. Red flash across entire blast radius (range 2)
       await flashMultiCells(canvas, 'DemiFlashRed.png', rangeIdxs);
       // 3. Large explosion + clear cell
+      playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_LARGE(canvas, cellIdx);
       await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
       // Nearby bots destroyed by blast get their own "is destroyed!" log lines
@@ -541,6 +555,8 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
 
     }
   }
+
+  playSound('_GameOver.wav');
 }
 	
 
