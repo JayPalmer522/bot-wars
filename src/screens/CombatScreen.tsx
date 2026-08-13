@@ -7,7 +7,7 @@ import {
 import { useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
-import { addLogEntry, clearLog, setCombatRecord } from "../store/battleLogSlice";
+import { addLogEntry, clearLog, setCombatRecord, setCombatMeta } from "../store/battleLogSlice";
 import { BEGIN_COMBAT, SHOW_COMBAT_RECORD } from "../utils/Combat";
 import { BEGIN_ANIMATION, REPLAY_COMBAT_RECORD, SET_MICRO_DELAY, SET_MACRO_DELAY } from "../utils/Animation";
 import { ATTEMPT_LOGIN, UPDATE_BATTLE_RESULT } from "../utils/Profiles";
@@ -176,6 +176,16 @@ export default function CombatScreen() {
       const { outcome, victoryType } = detectOutcome(record);
       await recordBattle(outcome, p2Id, p2Name);
       await UPDATE_BATTLE_RESULT(outcome, userId!, p2Id);
+
+      // Load updated ranks (recalculated by UPDATE_BATTLE_RESULT) and store in Redux
+      const p1Profile = await db.profiles.get(userId!);
+      const p1Rank = p1Profile?.stats?.rank ?? "Ensign";
+      let p2Rank = "";
+      if (p2Id !== null) {
+        const p2Profile = await db.profiles.get(p2Id);
+        p2Rank = p2Profile?.stats?.rank ?? "Ensign";
+      }
+      dispatch(setCombatMeta({ mode, p1Name: username ?? "Player 1", p1Rank, p2Name, p2Rank, outcome, victoryType }));
 
       const p1Name = username ?? "Player 1";
       const TURN_START_RE = /^\[INFO\] Bot \d+ \(army (\d+), "(.+)"\) begins turn/;
