@@ -14,15 +14,55 @@ function loadImage(src) {
   return new Promise((resolve) => {
     const img = new Image();
     img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
+    img.onerror = () => {
+      console.error(`[Animation] Failed to load image: ${src}`);
+      resolve(null);
+    };
     img.src = src;
   });
 }
 
-// Fire-and-forget audio playback — silently ignored if browser blocks autoplay.
+// ─── Audio (Web Audio API) ────────────────────────────────────────────────────
+// Must be unlocked from a user gesture via SET_AUDIO_CONTEXT before any
+// playSound call will produce output.
+
+let _audioCtx = null;
+const _bufferCache = {};
+
+/**
+ * SET_AUDIO_CONTEXT
+ * Call this synchronously inside a click handler (before any await) to unlock
+ * audio for the current page session.  Subsequent calls are no-ops.
+ */
+export function SET_AUDIO_CONTEXT(ctx) {
+  if (_audioCtx) return;
+  _audioCtx = ctx;
+  for (const f of [
+    '_GameStarts.wav', '_GameOver.wav', '_BotFires.wav',
+    '_BotMoves.wav', '_BotVeers.wav', '_Explosion_x.wav', '_Scan4Enemies.wav',
+  ]) _fetchSound(f);
+}
+
+async function _fetchSound(filename) {
+  if (!_audioCtx || _bufferCache[filename]) return;
+  try {
+    const res = await fetch(`/Sounds/${filename}`);
+    const arr = await res.arrayBuffer();
+    _bufferCache[filename] = await _audioCtx.decodeAudioData(arr);
+  } catch (e) {
+    console.warn(`[Audio] Could not load ${filename}:`, e);
+  }
+}
+
 function playSound(filename) {
-  const audio = new Audio(`/Sounds/${filename}`);
-  audio.play().catch(() => {});
+  const buf = _bufferCache[filename];
+  if (!buf || !_audioCtx) return;
+  try {
+    const src = _audioCtx.createBufferSource();
+    src.buffer = buf;
+    src.connect(_audioCtx.destination);
+    src.start(0);
+  } catch {}
 }
 
 function cellXY(index) {

@@ -9,7 +9,7 @@ import { useDispatch, useSelector } from "react-redux";
 import { RootState } from "../store/store";
 import { addLogEntry, clearLog, setCombatRecord, setCombatMeta } from "../store/battleLogSlice";
 import { BEGIN_COMBAT, SHOW_COMBAT_RECORD } from "../utils/Combat";
-import { BEGIN_ANIMATION, REPLAY_COMBAT_RECORD, SET_MICRO_DELAY, SET_MACRO_DELAY } from "../utils/Animation";
+import { BEGIN_ANIMATION, REPLAY_COMBAT_RECORD, SET_MICRO_DELAY, SET_MACRO_DELAY, SET_AUDIO_CONTEXT } from "../utils/Animation";
 import { ATTEMPT_LOGIN, UPDATE_BATTLE_RESULT } from "../utils/Profiles";
 import { db } from "../db/db";
 
@@ -40,8 +40,9 @@ async function loadFilteredArmies(forUserId: number, maxGold: string, maxWeight:
   const armies = await db.armies.where("userId").equals(forUserId).toArray();
   const qualified: string[] = [];
   for (const army of armies) {
-    const bots = await db.bots.where("id").anyOf(army.botIds).toArray();
-    const allPass = bots.every(bot => {
+    const botResults = await db.bots.bulkGet(army.botIds);
+    const allPass = botResults.every(bot => {
+      if (bot === undefined) return true;
       const g = parseInt(bot.totalGold   || "0");
       const w = parseInt(bot.totalWeight || "0");
       const p = parseInt(bot.totalPower  || "0");
@@ -190,6 +191,10 @@ export default function CombatScreen() {
   }
 
   async function simulateCombat() {
+    // Unlock Web Audio from the user-gesture scope (synchronous, before any await)
+    const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+    if (AudioCtx) SET_AUDIO_CONTEXT(new AudioCtx());
+
     setShowCover(false);
     const army1Data = await db.armies.where("[userId+name]").equals([userId!, army1]).first();
     const a2UserId  = mode === "vs-player" ? p2UserId! : userId!;
