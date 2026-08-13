@@ -193,7 +193,11 @@ export default function CombatScreen() {
   async function simulateCombat() {
     // Unlock Web Audio from the user-gesture scope (synchronous, before any await)
     const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-    if (AudioCtx) SET_AUDIO_CONTEXT(new AudioCtx());
+    if (AudioCtx) {
+      const audioCtx = new AudioCtx();
+      audioCtx.resume().catch(() => {});  // ensure it is in 'running' state
+      SET_AUDIO_CONTEXT(audioCtx);
+    }
 
     setShowCover(false);
     const army1Data = await db.armies.where("[userId+name]").equals([userId!, army1]).first();

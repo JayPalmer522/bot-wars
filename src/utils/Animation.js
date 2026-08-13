@@ -10,6 +10,10 @@ const CELL_GAP = 3;
 const PADDING = 3;
 const GRID_SIZE = 10;
 
+// Vite replaces this with the configured base path (e.g. "/botwars/") at build/dev time.
+// All public-folder asset paths must be prefixed with BASE, not hardcoded as "/Graphics/".
+const BASE = import.meta.env.BASE_URL;
+
 function loadImage(src) {
   return new Promise((resolve) => {
     const img = new Image();
@@ -46,9 +50,13 @@ export function SET_AUDIO_CONTEXT(ctx) {
 async function _fetchSound(filename) {
   if (!_audioCtx || _bufferCache[filename]) return;
   try {
-    const res = await fetch(`/Sounds/${filename}`);
+    const res = await fetch(`${BASE}Sounds/${filename}`);
+    if (!res.ok) { console.warn(`[Audio] ${filename} → HTTP ${res.status}`); return; }
     const arr = await res.arrayBuffer();
-    _bufferCache[filename] = await _audioCtx.decodeAudioData(arr);
+    _bufferCache[filename] = await new Promise((resolve, reject) =>
+      _audioCtx.decodeAudioData(arr, resolve, reject)
+    );
+    console.log(`[Audio] Loaded: ${filename}`);
   } catch (e) {
     console.warn(`[Audio] Could not load ${filename}:`, e);
   }
@@ -136,7 +144,11 @@ async function animateBulletSlide(canvas, bulletSrc, fromIndex, toIndex) {
  */
 export async function DRAW_MAP_BACKGROUND(canvas) {
   const ctx = canvas.getContext('2d');
-  const img = await loadImage('/Graphics/Empty_Green.png');
+  console.log('[Anim] DRAW_MAP_BACKGROUND — canvas:', canvas.width, 'x', canvas.height, 'ctx:', !!ctx);
+  // Draw a solid dark rectangle first so we can tell if canvas drawing works at all
+  if (ctx) { ctx.fillStyle = '#222'; ctx.fillRect(0, 0, canvas.width, canvas.height); }
+  const img = await loadImage(`${BASE}Graphics/Empty_Green.png`);
+  console.log('[Anim] Empty_Green.png loaded:', !!img);
   if (!img) return;
   for (let row = 0; row < GRID_SIZE; row++) {
     for (let col = 0; col < GRID_SIZE; col++) {
@@ -154,6 +166,9 @@ export async function DRAW_MAP_BACKGROUND(canvas) {
  */
 export async function DRAW_BOTS_ON_MAP(canvas, allBotsInCombatList, gameMapBots, gameMapFacing) {
   const ctx = canvas.getContext('2d');
+  const occupied = gameMapBots.filter(b => b !== "0");
+  console.log('[Anim] DRAW_BOTS_ON_MAP — occupied cells:', occupied.length,
+              'bots in list:', allBotsInCombatList.length);
   const drawTasks = [];
 
   for (let i = 0; i < gameMapBots.length; i++) {
@@ -161,14 +176,20 @@ export async function DRAW_BOTS_ON_MAP(canvas, allBotsInCombatList, gameMapBots,
     if (botId === "0") continue;
 
     const bot = allBotsInCombatList.find(b => String(b.combatBotNumber) === botId);
-    if (!bot) continue;
+    if (!bot) {
+      console.warn('[Anim] No bot found for cell', i, 'botId', botId,
+                   'available:', allBotsInCombatList.map(b => b.combatBotNumber));
+      continue;
+    }
 
     const facing = gameMapFacing[i];
-    const src = `/Graphics/B_I_${bot.botImage}_P${bot.army}_D${facing}.png`;
+    const src = `${BASE}Graphics/B_I_${bot.botImage}_P${bot.army}_D${facing}.png`;
+    console.log('[Anim] Loading sprite:', src);
     const { x, y } = cellXY(i);
 
     drawTasks.push(
       loadImage(src).then(img => {
+        console.log('[Anim] Sprite', src, img ? 'OK' : 'FAILED');
         if (img) ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
       })
     );
@@ -212,7 +233,7 @@ export async function ANI_FLASH_OVERLAY(canvas, filename, cellIndex) {
   const { x, y } = cellXY(cellIndex);
   const snapshot = ctx.getImageData(x, y, CELL_SIZE, CELL_SIZE);
 
-  const img = await loadImage(`/Graphics/${filename}`);
+  const img = await loadImage(`${BASE}Graphics/${filename}`);
   if (img) {
     ctx.drawImage(img, x, y, CELL_SIZE, CELL_SIZE);
   }
@@ -254,7 +275,7 @@ async function flashMultiCells(canvas, filename, cellIndices) {
   if (cellIndices.length === 0) return;
   const ctx = canvas.getContext('2d');
   const snapshot = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  const img = await loadImage(`/Graphics/${filename}`);
+  const img = await loadImage(`${BASE}Graphics/${filename}`);
   if (img) {
     for (const idx of cellIndices) {
       const { x, y } = cellXY(idx);
@@ -515,12 +536,12 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 2. Draw bot sprite at new location
       await drawSpriteAtCell(
         ctx,
-        `/Graphics/B_I_${bot.botImage}_P${bot.army}_D${facing}.png`,
+        `${BASE}Graphics/B_I_${bot.botImage}_P${bot.army}_D${facing}.png`,
         toIdx
       );
 
       // 3. Replace old location with empty tile — no delay
-      await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', fromIdx);
+      await drawSpriteAtCell(ctx, `${BASE}Graphics/Empty_Green.png`, fromIdx);
 
     } else if (ROTATE_BOT_RE.test(entry)) {
       const m       = entry.match(ROTATE_BOT_RE);
@@ -540,7 +561,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 2. Overwrite bot sprite at same cell with new facing direction — no delay
       await drawSpriteAtCell(
         ctx,
-        `/Graphics/B_I_${bot.botImage}_P${bot.army}_D${newDir}.png`,
+        `${BASE}Graphics/B_I_${bot.botImage}_P${bot.army}_D${newDir}.png`,
         cellIdx
       );
 
@@ -562,7 +583,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 2. Red flash on target — hit confirmed
       await ANI_FLASH_OVERLAY(canvas, 'DemiFlashRed.png', toIdx);
       // 3. Bullet slides from shooter to target
-      await animateBulletSlide(canvas, `/Graphics/Bullet_All_D${dir}.png`, fromIdx, toIdx);
+      await animateBulletSlide(canvas, `${BASE}Graphics/Bullet_All_D${dir}.png`, fromIdx, toIdx);
       // 4. Small explosion at target
       playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_SMALL(canvas, toIdx);
@@ -572,7 +593,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       const cellIdx = parseInt(m[1]) - 1;
       playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_MEDIUM(canvas, cellIdx);
-      await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
+      await drawSpriteAtCell(ctx, `${BASE}Graphics/Empty_Green.png`, cellIdx);
 
     } else if (SELF_DESTRUCT_RE.test(entry)) {
       const m         = entry.match(SELF_DESTRUCT_RE);
@@ -586,7 +607,7 @@ export async function REPLAY_COMBAT_RECORD(canvas, combatRecord, mapState, onEnt
       // 3. Large explosion + clear cell
       playSound('_Explosion_x.wav');
       await ANI_EXPLOSION_LARGE(canvas, cellIdx);
-      await drawSpriteAtCell(ctx, '/Graphics/Empty_Green.png', cellIdx);
+      await drawSpriteAtCell(ctx, `${BASE}Graphics/Empty_Green.png`, cellIdx);
       // Nearby bots destroyed by blast get their own "is destroyed!" log lines
       // handled by BOT_DESTROYED_RE as the replay continues.
 
