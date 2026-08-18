@@ -62,15 +62,21 @@ export default function NavigationScreen() {
       })),
     };
 
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
-    const url  = URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = "army-data.json";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    try {
+      const res = await fetch("/api/save-army-data", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json();
+      if (result.ok) {
+        alert("Done! army-data.json and userDefaults.ts have been updated.");
+      } else {
+        alert("Failed: " + result.error);
+      }
+    } catch (e) {
+      alert("Failed to reach dev server: " + String(e));
+    }
   }
 
   return (
