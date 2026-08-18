@@ -51,7 +51,7 @@ const TROOPER_ORDERS = [
   "Turn Left",
   "Move Forward 2",
   "If Movement Blocked by Ally ...",
-  "Angle Right",
+  "Veer Right",
   "Move Forward 1",
   "Fire Master Weapon",
   "If Any Enemies in Range ...",

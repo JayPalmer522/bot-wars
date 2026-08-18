@@ -754,11 +754,6 @@ export async function EXECUTE_ORDERS_LIST(
       COMBAT_RECORD.push(`Bot ${botId} checks: facing off-map = ${offMap}.`);
       if (!offMap) i++;
 
-    } else if (cmd === "Angle Right") {
-      // Angle Right = Veer Right
-      [GAME_MAP_FACING, COMBAT_RECORD] =
-        await CURRENT_VEER_RIGHT(GAME_MAP_FACING, COMBAT_RECORD, CURRENT_BOT, GAME_MAP_BOTS);
-
     } else if (cmd === "Activate Self-Destruct") {
       const idx = findBotIndex(GAME_MAP_BOTS, botId);
 
